@@ -4,6 +4,7 @@ from case.items import Report
 from case.util import *
 from scrapy.selector import Selector
 from bs4 import BeautifulSoup as BSoup
+from scrapy.selector import HtmlXPathSelector
 
 class CaseStudySpider(scrapy.Spider):
 	name = "selfReports"
@@ -47,17 +48,14 @@ class CaseStudySpider(scrapy.Spider):
 		"""
 		Parse the actual content inside the .rss
 		"""
-		print response.xpath('/feed').extract()
-		print response.xpath('/feed/entry[1]/updated').extract()
-		print response.xpath('/feed/entry[1]/title').extract()
-		print response.xpath('/feed/entry[1]/content').extract(), '====='
+		hxs = HtmlXPathSelector(response)
 		item = Report()
-		item['time'] = response.xpath('/feed/entry[1]/updated').extract()
-		item['title'] = response.xpath('/feed/entry[1]/title').extract()
-		item['post'] = response.xpath('/feed/entry[1]/content').extract()
-		# print item['time']
-		# print item['title']
-		# print item['post']
+		item['time'] = hxs.select('//feed/entry[1]/updated/text()').extract()[0]
+		item['title'] = hxs.select('//feed/entry[1]/title/text()').extract()[0]
+		item['post'] = hxs.select('//feed/entry[1]/content/text()').extract()[0]
+		print item['time']
+		print item['title']
+		print item['post']
 		# yield item
 
 	def parse_region(self, title_str):
