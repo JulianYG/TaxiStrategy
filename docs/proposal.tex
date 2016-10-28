@@ -4,7 +4,6 @@
 \usepackage[english]{babel}
 \usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
-
 %% Sets page size and margins
 \usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 
@@ -14,30 +13,33 @@
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
-\title{ }
+\title{The Butterfly: Relating NYC taxi trips with Dow Jones Industrial Average (DJIA)}
 \author{Julian Gao (julianyg) Qiujiang Jin (qiujiang)}
 
 \begin{document}
+
 \maketitle
-
-%\begin{abstract}
-%Your abstract.
-%\end{abstract}
-
 \section{Introduction}
-
-\section{Motivations}
-In recent publications, CNN has shown strong ability in both geometry and semantic scene understanding. A lot of work has been done in indoor scene depth and normal estimation using single RGB image with pretty good results\cite{laina2016deeper}\cite{li2015depth}\cite{hane2015direction}\cite{eigen2015predicting}. But research on outdoor scene is hindered due to the difficulties on getting reliable ground truth for training. The depth ground truth of outdoor scene could not be acquired by Kinect, a device which is able to obtain depth maps with identical sampling rate to those of color images. Two widely-used depth measurements in outdoor environment are LiDAR and stereo. Stereo equipment is hard to get perfect calibration between multiple cameras and the process of computing depth from raw input is computationally expensive. Also the accuracy range of stereo is limited compared with LiDAR. On the other hand, although LiDAR has longer measuring distance, its sampling rate is extremely sparse. Considering the strong need of understanding geometry information in the outdoor road scene for autonomous driving, we decide to do single image depth estimation in outdoor road environment. 
-
+New York City, the most populous metropolis on U.S. East Coast, has one of the world's busiest public transportation system. The symbolic yellow cab plays a significant role in this complex. Millions of taxi trips per day are records of peoples' behavior, containing information of the population flow, where numerous tasks are executed, money transacted.  From this massive cornucopia of data, we want to find out the correlation between taxi trips and market index, and build up a predictor based on this correlation.
+\section{Task Definition}
+Our task is defined as, given a time series of taxi data and DJIA, train a predictor that can take taxi trips data from a single day, to predict the rise/drop of DJIA on the next day. The comparison is taken between current day's closing DJIA and the next day's opening DJIA, where rise and drop are indicated by +1 and -1. For example, we first train the predictor with taxi trip record between Apr 2015 - Apr 2016, as well as the DJIA of that time period. Next we give the predictor a record from Sept 5$^{\text{th}}$, 2016, and it will predict rise/drop of DJIA on Sept 6$^{\text{th}}$.
 \section{Potential Problems \& Approaches}
-We plan to use on-the-shelf single indoor image depth estimation neural network structure from \cite{eigen2015predicting}. More specifically, we plan to use both stereo and LiDAR-captured depth information to generate ground truth for training. We expect to overcome the unsatisfactory depth ground truth problem, and the algorithm could predict depth from single outdoor road scene color image.
-\\\\
-Besides, since the geometry information is widely applicable, if the depth estimation task could be solved on schedule, it can be applied on car detection using geometry estimation: first reconstruct the 3D scene from depth prediction, then compute the probability map in the 3D scene showing where cars might be, and lastly use some on-the-shelf methods to detect cars in probability map.
- 
+The task can be decomposed into following aspects:
+\begin{description}
+\item[Extract useful features from data.] The taxi trip records are extremely information-rich, especially accumulated by millions of individuals in a metropolis. The routes may indicate events with magnitude from some region-wide events to personal daily routines. The dataset only provides a few main features: time, duration, trip fare, and location. The GPS coordinates will be gridified to discretize region indicators. The original data contain 18 features, and we need to cut them down while preserving useful information.
+\item[Deal with high-dimensional vectors.] Since we are taking taxi data from a single day to predict next day's DJIA trend, we have to combine all data points within one single day to a single data point. This is the greatest challenge in training, which may create a huge vector space, if we are to incorporate the location (e.g., grid $g_i\to g_j$) information into training. The high-dimensional data points will definitely cause computational complexity issues, and training with more dimensions than data points is a danger zone for any type of machine learning. To eliminate this problem, one idea is to calculate the average daily pick-up and drop-off rate of passengers for each grid, but this may also generalize the data too much and lead to information loss. Another possible solution is to first performed K-Means on the full data set, generate cluster centroids, then calculate meta-data of each day on top of the clustered centroids.
+\item[Train method selection.] One simple and intuitive approach is to incorporate both discrete indicators and continuous feature values into one single vector for linear regression. Kernelized SVM methods are also applicable, but may get restricted by the huge vector size. Other machine learning algorithms, such as random forest, are also potential solvers for this problem.
+\end{description}
+\section{Baseline \& Oracle}
+We implemented the baseline prediction with a naïve approach. We take the testing data (records strictly within one single day) and calculate the average fare rate (\$/sec). A threshold is given, and the predictor reports a rise in the next day's DJIA if average fare above the threshold, else reports drop. The oracle is a hardcoded case, which stores a subset of facts, and returns the fact when tested.
 \section{Dataset}
-In this project, we choose to use the KITTI Benchmark \cite{Geiger2013IJRR}\cite{Fritsch2013ITSC}\cite{Menze2015CVPR}. It contains a large number of images with stereo and LiDAR sampled data, which can be used in the depth estimation task. For the detection problem, KITTI also has specific problem section for training and testing.
-
+We adapt the yellow taxi trip and fare data from NYC government website\cite{gov}. The entire dataset is humongous, containing time series from 2009, and is split into months. For convenience and due to time/resource limitations, we use a small portion from Mar 2016, which is 1.8GB in size. The data is stored in csv files, organized as follows:\\\\
+\textbf{1, 2016-03-01 00:00:00, 2016-03-01 00:07:55, 1, 2.50, -73.97674560546875, 40.765151977539062, 1, N, -74.004264831542969, 40.746128082275391, 1, 9, 0.5, 0.5, 2.05, 0, 0.3, 12.35}, where each column corresponds to \\ \\
+\textbf{VendorID, tpep pickup datetime, tpep dropoff datetime, passenger count, trip distance, pickup longitude, pickup latitude, RatecodeID, store and fwd flag, dropoff longitude, dropoff latitude, payment type, fare amount, extra, mta tax, tip amount, tolls amount, improvement surcharge, total amount}.\\\\
+The DJIA is gathered from Yahoo finance\cite{yahoo}, and is processed to convert numbers into date: +1/-1 label mapping.
+\section{Related Work}
+Harvard NYC taxi data prediction project.\cite{harvard}\\
+Previous CS 221 final project.\cite{221}
 \bibliographystyle{ieeetr}
-\bibliography{sample}
-
+\bibliography{cite}
 \end{document}
