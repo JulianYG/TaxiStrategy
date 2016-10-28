@@ -4,32 +4,36 @@ from oracle import oracle_test
 from baseline import base_test
 from lib.utils import *
 from lib.classifier import *
+"""
+The execution script of NYC taxi data -> DJIA prediction
+"""
 
-def execute(m, f, p, w, l, d, o, i):
+def execute(m, f, p, w, l, d, o, i, y):
 	"""
 	Execute the command line inputs
 	"""
 	# Learning phase combines train and testing
 	if l:
 		# Training phase, only train w/o testing
-		train_data = preprocess(read_file(i), debug=d)
+		train_data = preprocess(f)
 		train(train_data, o, debug=d)
 		# Testing phase, if testing data is provided
 		if f:
-			test_data = preprocess(read_file(f), debug=d)
-			return test(test_data, read_weights(o), debug=d)
+			test_data = preprocess(f)
+			return test(test_data, read_res(y), read_weights(o), debug=d)
 		return
 	# If prediction phase, only do testing
 	if p:
 		# Testing phase
-		test_data = preprocess(read_file(f), debug=d)
 		# Cases of baseline and oracle
+		raw_data = read_file(f)
 		if m == 0:
-			return base_test(test_data)
+			return base_test(raw_data)
 		if m == 1:
-			return oracle_test(test_data)
+			return oracle_test(raw_data)
 		# Regular case
-		return test(test_data, read_weights(w), debug=d)
+		test_data = preprocess(f)
+		return test(test_data, read_res(y), read_weights(w), debug=d)
 
 def read_command(argv):
 	"""
@@ -46,9 +50,12 @@ def read_command(argv):
 	argv.add_option('-o', type=str, help="Output trained weights file name")
 	argv.add_option('-l', type=int, help="Learning phase", default=0)
 	argv.add_option('-d', type=int, help="Debug mode", default=0)
+	argv.add_option('-y', type=str, help="Actual case")
+
 	arg, _ = argv.parse_args()
 
-	return {'m': arg.m, 'f': arg.f, 'p': arg.p, 'w': arg.w, 'l': arg.l, 'd': arg.d, 'o': arg.o, 'i': arg.i}
+	return {'m': arg.m, 'f': arg.f, 'p': arg.p, 'w': arg.w, 'l': arg.l, \
+		'd': arg.d, 'o': arg.o, 'i': arg.i, 'y': arg.y}
 
 if __name__ == '__main__':
 
