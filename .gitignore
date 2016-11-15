@@ -3,3 +3,4 @@
 .DS_Store
 */yellow*.csv
 *.pyc
+*/*.pyc

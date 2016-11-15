@@ -13,14 +13,15 @@
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
-\title{The Butterfly: Relating NYC taxi trips with Dow Jones Industrial Average (DJIA)}
+\title{The Butterfly: Relating NYC taxi trips with Dow Jones Industrial Average (DJIA) Progress Report}
+
 \author{Julian Gao (julianyg) Qiujiang Jin (qiujiang)}
 
 \begin{document}
 
 \maketitle
-\section{Introduction}
-New York City, the most populous metropolis on U.S. East Coast, has one of the world's busiest public transportation system. The symbolic yellow cab plays a significant role in this complex. Millions of taxi trips per day are records of peoples' behavior, containing information of the population flow, where numerous tasks are executed, money transacted.  From this massive cornucopia of data, we want to find out the correlation between taxi trips and market index, and build up a predictor based on this correlation.
+\section{Requirements}
+Propose a model and an algorithm for tackling your task. You should describe the model and algorithm in detail and use a concrete example to demonstrate how the model and algorithm work. Don't describe methods in general; describe precisely how they apply to your problem (what are variables, factors, states, etc.)? You should also have finished implementing a preliminary version of your algorithm (maybe it's not fully optimized yet and it doesn't have all the features you want). Report your initial experimental results.
 \section{Task Definition}
 Our task is defined as, given a time series of taxi data and DJIA, train a predictor that can take taxi trips data from a single day, to predict the rise/drop of DJIA on the next day. The comparison is taken between current day's closing DJIA and the next day's opening DJIA, where rise and drop are indicated by +1 and -1. For example, we first train the predictor with taxi trip record between Apr 2015 - Apr 2016, as well as the DJIA of that time period. Next we give the predictor a record from Sept 5$^{\text{th}}$, 2016, and it will predict rise/drop of DJIA on Sept 6$^{\text{th}}$.
 \section{Potential Problems \& Approaches}
