@@ -5,9 +5,9 @@ from pyspark.mllib.classification import *
 def train_raw(sc, data_x, data_y, weight_dest, debug=0, featureExtractor=0):
 	
 	if featureExtractor == 1:
-		feat = simple_aggregating_feature_extractor(data_x)
+		feat = simple_averaging_feature_extractor(data_x)
 	elif featureExtractor == 2:
-		feat = simple_aggregating_feature_extractor(data_x)
+		feat = baseline_feature_extractor(data_x)
 	else:
 		feat = simple_aggregating_feature_extractor(data_x)
 	
@@ -19,7 +19,7 @@ def train_features(sc, feat, labels, weight_dest):
 	
 	# Split data for train and validation
 	train_data, val_data = labeled_train_data.randomSplit([0.7, 0.3])
-	model = SVMWithSGD.train(train_data, iterations=100)
+	model = SVMWithSGD.train(train_data, iterations=500)
 	model.save(sc, weight_dest)
 	
 	# Evaluating the model on training data

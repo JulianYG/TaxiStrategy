@@ -3,6 +3,15 @@ from collections import OrderedDict
 from datetime import datetime
 from pyspark.mllib.regression import LabeledPoint
 import os
+import sys
+import math
+
+def gridify(lon, lat):
+	lat_range = (math.floor(lat / 0.00333), math.ceil(lat / 0.00333))
+	lat_grid = (str(lat_range[0] * 0.00333), str(lat_range[1] * 0.00333))
+	lon_range = (math.floor(lon / 0.00333), math.ceil(lon / 0.00333))
+	lon_grid = (str(lon_range[0] * 0.00333), str(lon_range[1] * 0.00333))
+	return (lon_grid, lat_grid)
 
 def read_file(file_name):
 	"""
@@ -62,16 +71,17 @@ def preprocess_taxi_data(file_name, sc):
 		if (len(p) == 19):
 			if (isfloat(p[5]) and isfloat(p[6]) and isfloat(p[9]) and isfloat(p[10]) \
 				and isfloat(p[4])):
-				if (float(p[5]) != 0 and float(p[6]) != 0 and float(p[9]) != 0 and float(p[10]) != 0):
-					if (float(p[9]) > 0):
-						temp = p[10]
-						p[9] = p[10]
-						p[10] = temp
-					if (float(p[5]) > 0):
-						temp = p[6]
-						p[5] = p[6]
-						p[6] = temp	
-					return p
+				if float(p[4]) < 2000:	# exclude anomalies (errors on mileage)
+					if (float(p[5]) != 0 and float(p[6]) != 0 and float(p[9]) != 0 and float(p[10]) != 0):
+						if (float(p[9]) > 0):
+							temp = p[10]
+							p[9] = p[10]
+							p[10] = temp
+						if (float(p[5]) > 0):
+							temp = p[6]
+							p[5] = p[6]
+							p[6] = temp	
+						return p
 	
 	def extract_date_str(date_time_str):
 		return datetime.strptime(date_time_str, fmt).strftime('%Y-%m-%d')
@@ -80,7 +90,7 @@ def preprocess_taxi_data(file_name, sc):
 	
 	header = lines.first()
 	data_lines = lines.filter(lambda x: x != header).filter(remove_corrupt_data)
-	full_processed_data = data_lines.map(lambda x: (str(x[2]), float(x[3]), (datetime.strptime(x[2], \
+	full_processed_data = data_lines.map(lambda x: (str(x[1]), float(x[3]), (datetime.strptime(x[2], \
 		fmt) - datetime.strptime(x[1], fmt)).seconds, float(x[4]), float(x[5]), float(x[6]), float(x[9]), \
 			float(x[10]), int(x[11]), float(x[12]), float(x[13]), float(x[14]), \
 				float(x[15]), float(x[16]), float(x[17]), float(x[18])))
@@ -89,9 +99,9 @@ def preprocess_taxi_data(file_name, sc):
 	
 	# Note the pre-processed data takes following form:
 	# (Key, Value)
-	# Key: date string in form YYYY-MM-DD x[0]
+	# Key: pick up date string in form YYYY-MM-DD x[0]
 	# Value: (Passenger Count, trip time, trip distance, pickup_lon, pickup_lat, dropoff_lon, dropoff_lat,
-	# payment_type, fare_amt, extra, mta_tax, tip_amt, tolls_amt, total_amt) x[1]
+	# payment_type, fare_amt, extra, mta_tax, surcharge, tip_amt, tolls_amt, total_amt) x[1]
 	return dated_data
 
 def generate_labeled_data(x_feature_rdd, label_rdd):
@@ -110,11 +120,17 @@ def read_DJIA_data(sc, djia):
 def read_feat(sc, ft, featureExtractor=0):
 	def simple_feature(x):
 		return ((str(x[0]), (float(x[1]), float(x[2]), float(x[3]), float(x[4]))))
-	
+	def baseline_feature(x):
+		return ((str(x[0]), (float(x[1]), float(x[2]), float(x[3]), float(x[4]),\
+			float(x[5]), float(x[6]), float(x[7]), float(x[8]), float(x[9]), float(x[10]))))
+		
+	raw_feat = sc.textFile(ft).map(lambda x: x.split(','))
 	if featureExtractor == 1:
-		features = sc.textFile(ft).map(lambda x: x.split(',')).map(simple_feature)
+		features = raw_feat.map(simple_feature)
+	elif featureExtractor == 2:
+		features = raw_feat.map(baseline_feature)
 	else:
-		features = sc.textFile(ft).map(lambda x: x.split(',')).map(simple_feature)
+		features = raw_feat.map(simple_feature)
 	return features
 
 def read_res(result):
