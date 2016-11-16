@@ -110,7 +110,7 @@ def generate_labeled_data(x_feature_rdd, label_rdd):
 	training labels in the form of (date, indicator). Performs inner join
 	on two rdds, abandon date information to generate simple (feat, indicator) pairs
 	"""
-	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): LabeledPoint(int(y), list(x)))
+	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): LabeledPoint(int(y), list(x)))	
 	return mix
 
 def read_DJIA_data(sc, djia):

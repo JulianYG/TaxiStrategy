@@ -29,7 +29,8 @@ def train_features(sc, feat, labels, weight_dest):
 	valLabelsAndPreds = val_data.map(lambda p: (p.label, model.predict(p.features)))
 	valErr = valLabelsAndPreds.filter(lambda (v, p): v != p).count() / float(val_data.count())
 	
-	print("Training Error = " + str(trainErr) + "\nValidation Error = " + str(valErr))
+	print("Training Error = " + str(trainErr)  + " out of " + str(train_data.count()) + \
+		" samples\nValidation Error = " + str(valErr) + " out of " + str(val_data.count()) + " samples")
 
 def test(sc, test_data, weight_dest, result_dest, debug=0, featureExtractor=0):
 	
