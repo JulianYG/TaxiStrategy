@@ -1,6 +1,7 @@
 import csv
 from collections import OrderedDict
 from datetime import datetime
+from pyspark.mllib.regression import LabeledPoint
 
 def read_file(file_name):
 	"""
@@ -25,7 +26,7 @@ def preprocess_DJIA_data(file_name, sc):
 				if row[1][1] - next_day[1][0] < 0:
 					indicators.append((row[0], 1))
 				else:
-					indicators.append((row[0], -1))
+					indicators.append((row[0], 0))
 			next_day = row
 		return iter(indicators)
 	
@@ -95,7 +96,7 @@ def generate_labeled_data(x_feature_rdd, label_rdd):
 	training labels in the form of (date, indicator). Performs inner join
 	on two rdds, abandon date information to generate simple (feat, indicator) pairs
 	"""
-	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): (x, y))
+	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): LabeledPoint(int(y), list(x)))
 	return mix
 
 def read_res(result):
