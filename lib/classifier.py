@@ -2,9 +2,20 @@ from lib.utils import generate_labeled_data
 from lib.featureExtractors import *
 from pyspark.mllib.classification import *
 
-def train(sc, data_x, data_y, weight_dest, debug=0):
-	simple_aggregating_x = simple_aggregating_feature_extractor(data_x)
-	labeled_train_data = generate_labeled_data(simple_aggregating_x, data_y)
+def train_raw(sc, data_x, data_y, weight_dest, debug=0, featureExtractor=0):
+	
+	if featureExtractor == 1:
+		feat = simple_aggregating_feature_extractor(data_x)
+	elif featureExtractor == 2:
+		feat = simple_aggregating_feature_extractor(data_x)
+	else:
+		feat = simple_aggregating_feature_extractor(data_x)
+	
+	train_features(sc, feat, data_y, weight_dest)
+
+def train_features(sc, feat, labels, weight_dest):
+	
+	labeled_train_data = generate_labeled_data(feat, labels)	
 	
 	# Split data for train and validation
 	train_data, val_data = labeled_train_data.randomSplit([0.7, 0.3])
@@ -20,7 +31,7 @@ def train(sc, data_x, data_y, weight_dest, debug=0):
 	
 	print("Training Error = " + str(trainErr) + "\nValidation Error = " + str(valErr))
 
-def test(sc, test_data, weight_dest, result_dest, debug=0):
+def test(sc, test_data, weight_dest, result_dest, debug=0, featureExtractor=0):
 	
 	model = SVMModel.load(sc, weight_dest);
 	
@@ -28,6 +39,4 @@ def test(sc, test_data, weight_dest, result_dest, debug=0):
 	
 	testLabelsAndPreds.saveAsTextFile(result_dest)
 
-def read_weights(file):
 
-	pass

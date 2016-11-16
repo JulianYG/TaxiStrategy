@@ -2,6 +2,7 @@ import csv
 from collections import OrderedDict
 from datetime import datetime
 from pyspark.mllib.regression import LabeledPoint
+import os
 
 def read_file(file_name):
 	"""
@@ -34,6 +35,8 @@ def preprocess_DJIA_data(file_name, sc):
 	header = lines.first()	# Extract header
 	processed_lines = lines.filter(lambda r: r != header).map(lambda x: (str(x[0]), \
 		(float(x[1]), float(x[4])))).sortByKey(ascending=False).mapPartitions(observe)
+	labels = processed_lines.map(lambda (x, y): str(x) + ',' + str(y)).coalesce(1, True)
+	labels.saveAsTextFile(os.path.join(os.getcwd(), 'data/2016-03-y.train'))
 	return processed_lines
 
 def preprocess_taxi_data(file_name, sc):
@@ -74,6 +77,7 @@ def preprocess_taxi_data(file_name, sc):
 		return datetime.strptime(date_time_str, fmt).strftime('%Y-%m-%d')
 	
 	lines = sc.textFile(file_name, 1).map(lambda x: x.split(','))
+	
 	header = lines.first()
 	data_lines = lines.filter(lambda x: x != header).filter(remove_corrupt_data)
 	full_processed_data = data_lines.map(lambda x: (str(x[2]), float(x[3]), (datetime.strptime(x[2], \
@@ -99,10 +103,24 @@ def generate_labeled_data(x_feature_rdd, label_rdd):
 	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): LabeledPoint(int(y), list(x)))
 	return mix
 
+def read_DJIA_data(sc, djia):
+	data = sc.textFile(djia).map(lambda x: x.split(',')).map(lambda (x, y): (str(x), int(y)))
+	return data
+
+def read_feat(sc, ft, featureExtractor=0):
+	def simple_feature(x):
+		return ((str(x[0]), (float(x[1]), float(x[2]), float(x[3]), float(x[4]))))
+	
+	if featureExtractor == 1:
+		features = sc.textFile(ft).map(lambda x: x.split(',')).map(simple_feature)
+	else:
+		features = sc.textFile(ft).map(lambda x: x.split(',')).map(simple_feature)
+	return features
+
 def read_res(result):
 	"""
 	Return a mapping from date and indicator:
-	If DJIA increases this day, +1; else -1
+	If DJIA increases this day, 1; else 0
 	"""
 	remark = OrderedDict()
 	with open(result, 'r') as f:

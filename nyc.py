@@ -3,20 +3,33 @@ from oracle import oracle_test
 from baseline import base_test
 from lib.utils import *
 from lib.classifier import *
+from lib import featureExtractors
 
 """
 The execution script of NYC taxi data -> DJIA prediction
 """
-def execute(sc, m, f, p, w, l, d, o, x, y, r):
+def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
 	"""
 	Execute the command line inputs
 	"""
 	# Learning phase combines train and testing
 	if l:
 		# Training phase, only train w/o testing
-		data_x = preprocess_taxi_data(x, sc)
-		data_y = preprocess_DJIA_data(y, sc)
-		return train(sc, data_x, data_y, o, debug=d)
+		if a:
+			features = read_feat(sc, a, featureExtractor=e)
+			if b:
+				return train_features(sc, features, read_DJIA_data(sc, b), o)
+			else:
+				return train_features(sc, features, preprocess_DJIA_data(y, sc), o)
+		else:
+			data_x = preprocess_taxi_data(x, sc)
+			if b:
+				return train_raw(sc, data_x, read_DJIA_data(sc, b), o, debug=d,\
+					featureExtractor=e)
+			else:
+				return train_raw(sc, data_x, preprocess_DJIA_data(y, sc), o, debug=d, \
+					featureExtractor=e)
+				
 	# If prediction phase, only do testing
 	if p:
 		# Testing phase
@@ -28,7 +41,7 @@ def execute(sc, m, f, p, w, l, d, o, x, y, r):
 			return oracle_test(raw_data)
 		# Regular case
 		test_data = preprocess_taxi_data(f)
-		return test(sc, test_data, w, r, debug=d)
+		return test(sc, test_data, w, r, debug=d, featureExtractor=e)
 
 def read_command(argv):
 	"""
@@ -47,10 +60,14 @@ def read_command(argv):
 	argv.add_option('-l', type=int, help="Learning phase", default=0)
 	argv.add_option('-d', type=int, help="Debug mode", default=0)
 	argv.add_option('-r', type=str, help="Results directory")
+	argv.add_option('-a', type=str, help="Feature data")
+	argv.add_option('-b', type=str, help="Labels")
+	argv.add_option('-e', type=int, help="Feature Extractor to use", default=0)
 	
 	arg, _ = argv.parse_args()
 	return {'m': arg.m, 'f': arg.f, 'p': arg.p, 'w': arg.w, 'l': arg.l, \
-		'd': arg.d, 'o': arg.o, 'x': arg.x, 'y': arg.y, 'r': arg.r}
+		'd': arg.d, 'o': arg.o, 'x': arg.x, 'y': arg.y, 'r': arg.r, 'a': arg.a, \
+			'b': arg.b, 'e': arg.e}
 
 if __name__ == '__main__':
 	from pyspark import SparkContext
