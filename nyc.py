@@ -22,12 +22,21 @@ def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
 			else:
 				return train_features(sc, features, preprocess_DJIA_data(y, sc), o)
 		else:
-			data_1 = preprocess_taxi_data(x, sc)
-# 			data_x = preprocess_taxi_data(x, sc)
 			data_2 = preprocess_taxi_data('data/2016_02_x.csv', sc)
+			data_1 = preprocess_taxi_data(x, sc)		
+			
+# 			data_x = preprocess_taxi_data(x, sc)
+			
 			data_3 = preprocess_taxi_data('data/2016_01_x.csv', sc)
 			data_4 = preprocess_taxi_data('data/2016_04_x.csv', sc)
-			data_x = sc.union([data_1, data_2, data_3, data_4])
+			data_5 = preprocess_taxi_data('data/2016_05_x.csv', sc)
+			data_6 = preprocess_taxi_data('data/2016_06_x.csv', sc)
+		
+			data_7 = preprocess_taxi_data('data/2015_12_x.csv', sc)
+			data_8 = preprocess_taxi_data('data/2015_11_x.csv', sc)
+			data_9 = preprocess_taxi_data('data/2015_10_x.csv', sc)
+			
+			data_x = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8, data_9])
 			if b:
 				return train_raw(sc, data_x, read_DJIA_data(sc, b), o, debug=d,\
 					featureExtractor=e)

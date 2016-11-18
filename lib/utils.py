@@ -33,10 +33,14 @@ def preprocess_DJIA_data(file_name, sc):
 		next_day = None
 		for row in records:
 			if next_day:
-				if row[1][1] - next_day[1][0] < 0:
-					indicators.append((row[0], 1))
-				else:
-					indicators.append((row[0], 0))
+				# Only use data with higher fluctuations
+				# Predict next day's trend (close - open) by 
+				# today's data
+				if abs(next_day[1][1] - next_day[1][0]) / next_day[1][1] >= 0.001:
+					if next_day[1][1] - next_day[1][0] > 0:
+						indicators.append((row[0], 1))
+					else:
+						indicators.append((row[0], 0))
 			next_day = row
 		return iter(indicators)
 	
@@ -71,7 +75,7 @@ def preprocess_taxi_data(file_name, sc):
 		if (len(p) == 19):
 			if (isfloat(p[5]) and isfloat(p[6]) and isfloat(p[9]) and isfloat(p[10]) \
 				and isfloat(p[4])):
-				if float(p[4]) < 2000:	# exclude anomalies (errors on mileage)
+				if float(p[4]) < 2000 and float(p[4]) > 0:	# exclude anomalies (errors on mileage)
 					if (float(p[5]) != 0 and float(p[6]) != 0 and float(p[9]) != 0 and float(p[10]) != 0):
 						if (float(p[9]) > 0):
 							temp = p[10]
