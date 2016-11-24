@@ -2,13 +2,14 @@ from optparse import OptionParser
 from oracle import oracle_test
 from baseline import base_test
 from lib.utils import *
-from lib.classifier import *
+from lib.learner import *
+from lib.predictor import *
 from lib import featureExtractors
 
 """
 The execution script of NYC taxi data -> DJIA prediction
 """
-def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
+def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e, t):
 	"""
 	Execute the command line inputs
 	"""
@@ -18,9 +19,9 @@ def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
 		if a:
 			features = read_feat(sc, a, featureExtractor=e)
 			if b:
-				return train_features(sc, features, read_DJIA_data(sc, b), o)
+				return train_features(sc, features, read_DJIA_data(sc, b), o, t)
 			else:
-				return train_features(sc, features, preprocess_DJIA_data(y, sc), o)
+				return train_features(sc, features, preprocess_DJIA_data(y, sc), o, t)
 		else:
 			data_2 = preprocess_taxi_data('data/2016_02_x.csv', sc)
 			data_1 = preprocess_taxi_data(x, sc)		
@@ -35,13 +36,23 @@ def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
 			data_7 = preprocess_taxi_data('data/2015_12_x.csv', sc)
 			data_8 = preprocess_taxi_data('data/2015_11_x.csv', sc)
 			data_9 = preprocess_taxi_data('data/2015_10_x.csv', sc)
+			data_10 = preprocess_taxi_data('data/2015_09_x.csv', sc)
+			data_11 = preprocess_taxi_data('data/2015_08_x.csv', sc)
+			data_12 = preprocess_taxi_data('data/2015_07_x.csv', sc)
+			data_13 = preprocess_taxi_data('data/2015_06_x.csv', sc)
+			data_14 = preprocess_taxi_data('data/2015_05_x.csv', sc)
+			data_15 = preprocess_taxi_data('data/2015_04_x.csv', sc)
+			data_16 = preprocess_taxi_data('data/2015_03_x.csv', sc)
+			data_17 = preprocess_taxi_data('data/2015_02_x.csv', sc)
+			data_18 = preprocess_taxi_data('data/2015_01_x.csv', sc)
 			
-			data_x = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8, data_9])
+			data_x = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8,\
+				 data_9, data_10, data_11, data_12, data_13, data_14, data_15, data_16, data_17, data_18])
 			if b:
-				return train_raw(sc, data_x, read_DJIA_data(sc, b), o, debug=d,\
+				return train_raw(sc, data_x, read_DJIA_data(sc, b), o, t, debug=d,\
 					featureExtractor=e)
 			else:
-				return train_raw(sc, data_x, preprocess_DJIA_data(y, sc), o, debug=d, \
+				return train_raw(sc, data_x, preprocess_DJIA_data(y, sc), o, t, debug=d, \
 					featureExtractor=e)
 				
 	# If prediction phase, only do testing
@@ -55,7 +66,7 @@ def execute(sc, m, f, p, w, l, d, o, x, y, r, a, b, e):
 			return oracle_test(raw_data)
 		# Regular case
 		test_data = preprocess_taxi_data(f)
-		return test(sc, test_data, w, r, debug=d, featureExtractor=e)
+		return test(sc, test_data, w, r, t, debug=d, featureExtractor=e)
 
 def read_command(argv):
 	"""
@@ -77,11 +88,13 @@ def read_command(argv):
 	argv.add_option('-a', type=str, help="Feature data")
 	argv.add_option('-b', type=str, help="Labels")
 	argv.add_option('-e', type=int, help="Feature Extractor to use", default=0)
+	argv.add_option('-t', type=str, help="Training/Prediction algorithm; prediction alg must\
+		match with the model trained", default="SVM")
 	
 	arg, _ = argv.parse_args()
 	return {'m': arg.m, 'f': arg.f, 'p': arg.p, 'w': arg.w, 'l': arg.l, \
 		'd': arg.d, 'o': arg.o, 'x': arg.x, 'y': arg.y, 'r': arg.r, 'a': arg.a, \
-			'b': arg.b, 'e': arg.e}
+			'b': arg.b, 'e': arg.e, 't': arg.t}
 
 if __name__ == '__main__':
 	from pyspark import SparkContext
