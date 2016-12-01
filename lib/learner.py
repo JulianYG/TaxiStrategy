@@ -7,6 +7,7 @@ Created on Nov 24, 2016
 from lib.utils import generate_labeled_data
 from lib.featureExtractors import *
 from pyspark.mllib.classification import *
+from pyspark.mllib.clustering import KMeans, KMeansModel
 from pyspark.mllib.tree import RandomForest, RandomForestModel
 
 def train_raw(sc, data_x, data_y, weight_dest, train_method, debug=0, featureExtractor=0):
@@ -27,13 +28,16 @@ def train_features(sc, feat, labels, weight_dest, train_method):
     # Split data for train and validation
     train_data, val_data = labeled_train_data.randomSplit([0.7, 0.3])
     
-    
     if train_method == "forest":
         model, trainErr, valErr = random_forest_train(train_data, val_data, numTrees=4,
             impurity='gini', maxDepth=10, maxBins=16)
+    elif train_method == "kmeans":
+        kmeans_data = feat.map(lambda (x, v): v)
+        kmeans_train_data, kmeans_val_data = kmeans_data.randomSplit([0.7, 0.3])
+        model, trainErr, valErr = kmeans(kmeans_train_data, kmeans_val_data, maxIter=20, runs=5)
     else:   # Default is SVM
         model, trainErr, valErr = svm_train(train_data, val_data, 
-            iterations=8000, step=0.5, regParam=0.05)
+            iterations=2000, step=0.5, regParam=0.05)
         
     #   model.save(sc, weight_dest)  
     print("Training Error = " + str(trainErr)  + " out of " + str(train_data.count()) + \
@@ -67,5 +71,14 @@ def random_forest_train(train_data, val_data, numTrees=3, impurity='gini', maxDe
 
     return model, trainErr, valErr
 
-
-
+def kmeans(train_data, val_data, maxIter=200, runs=5, initializationMode="random"):
+    
+    clusters = KMeans.train(train_data, 2, maxIterations=maxIter, runs=runs, initializationMode=initializationMode)
+    def error(point):
+        center = clusters.centers[clusters.predict(point)]
+        return math.sqrt(sum([x**2 for x in (point - center)]))
+    squaredSumTrainError = train_data.map(lambda point: error(point)).reduce(lambda x, y: x + y)
+    squaredSumValError = val_data.map(lambda point: error(point)).reduce(lambda x, y: x + y)
+   
+    return clusters, squaredSumTrainError, squaredSumValError
+    

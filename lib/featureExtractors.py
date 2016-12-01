@@ -42,12 +42,12 @@ def simple_averaging_feature_extractor(rdd_data):
         feat[1] * 1.0, feat[2], feat[-1])))
 
     sum_data_cnt = simplified_data.combineByKey(lambda val: (val[0], val[0] * val[0], val[1], val[1] * val[1], 
-                                                             val[2], val[2] * val[2], val[3], val[3] * val[3], 1), \
-        lambda x, val: (x[0] + val[0], x[1] + val[0] * val[0], x[2] + val[1], x[3] + val[1] * val[1], 
-                        x[4] + val[2], x[5] + val[2] * val[2], x[6] + val[3], x[7] + val[3] * val[3], 
-                        x[8] + 1), \
+        val[2], val[2] * val[2], val[3], val[3] * val[3], 1), \
+            lambda x, val: (x[0] + val[0], x[1] + val[0] * val[0], x[2] + val[1], x[3] + val[1] * val[1], 
+                x[4] + val[2], x[5] + val[2] * val[2], x[6] + val[3], x[7] + val[3] * val[3], 
+                x[8] + 1), \
             lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4], x[5] + y[5],
-                          x[6] + y[6], x[7] + y[7], x[8] + y[8]))
+                x[6] + y[6], x[7] + y[7], x[8] + y[8]))
     
     def stddev((sumX0, sumSquare0, sumX1, sumSquare1, sumX2, sumSquare2, sumX3, sumSquare3, n)):
         mean0 = sumX0 / n;
@@ -141,6 +141,5 @@ def grid_feature_extractor(rdd_data):
     for each grid in each day.
     #3
     """
-    
     pass
 
