@@ -1,17 +1,21 @@
 import csv
 from collections import OrderedDict
 from datetime import datetime
-from pyspark.mllib.regression import LabeledPoint
 import os
 import sys
 import math
 
-def gridify(lon, lat):
+fmt = '%Y-%m-%d %H:%M:%S'
+
+def gridify(lon, lat, grid_factor):
 	lat_range = (math.floor(lat / 0.00333), math.ceil(lat / 0.00333))
 	lat_grid = (str(lat_range[0] * 0.00333), str(lat_range[1] * 0.00333))
 	lon_range = (math.floor(lon / 0.00333), math.ceil(lon / 0.00333))
 	lon_grid = (str(lon_range[0] * 0.00333), str(lon_range[1] * 0.00333))
 	return (lon_grid, lat_grid)
+
+def get_time_stamp_hr(date_time_str):
+		return datetime.strptime(date_time_str, fmt).strftime('%H')
 
 def read_file(file_name):
 	"""
@@ -52,7 +56,7 @@ def preprocess_DJIA_data(file_name, sc):
 	labels.saveAsTextFile(os.path.join(os.getcwd(), 'data/2016-03-y.train'))
 	return processed_lines
 
-def preprocess_taxi_data(file_name, sc):
+def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
 	Generate taxi data in the form of 
 	(date, (Passenger Count, trip time, trip distance, pickup_lon, pickup_lat, 
@@ -60,7 +64,6 @@ def preprocess_taxi_data(file_name, sc):
 	tip_amt, tolls_amt, total_amt))
 	to provide raw data for feature extractors.
 	"""
-	fmt = '%Y-%m-%d %H:%M:%S'
 	# Exception Handling  and removing wrong data lines 
 	def isfloat(value):
 		try:
@@ -71,54 +74,45 @@ def preprocess_taxi_data(file_name, sc):
 
 	# remove lines if they don't have 19 values or contain bad entries (especially GPS coordinates)
 	# switch around wrong lat and lon
-	def remove_corrupt_data(p):
+	def sanity_check(p):
 		if (len(p) == 19):
-			if (isfloat(p[5]) and isfloat(p[6]) and isfloat(p[9]) and isfloat(p[10]) \
-				and isfloat(p[4])):
-				if float(p[4]) < 2000 and float(p[4]) > 0:	# exclude anomalies (errors on mileage)
-					if (float(p[5]) != 0 and float(p[6]) != 0 and float(p[9]) != 0 and float(p[10]) != 0):
-						if (float(p[9]) > 0):
-							temp = p[10]
-							p[9] = p[10]
-							p[10] = temp
-						if (float(p[5]) > 0):
-							temp = p[6]
-							p[5] = p[6]
-							p[6] = temp	
-						return p
+			if p[1] != p[2]:	# pickup time different from dropoff time
+				if (isfloat(p[5]) and isfloat(p[6]) and isfloat(p[9]) and isfloat(p[10]) \
+					and isfloat(p[4]) and isfloat(p[-1])):
+					if float(p[4]) < 1000 and float(p[4]) > 0 and float(p[-1]) > 0:	
+						# exclude anomalies (errors on mileage or charge)
+						if (int(float(p[5])) == -73 or int(float(p[5])) == -74) and \
+							(int(float(p[9])) == -73 or int(float(p[9])) == -74)\
+							and (int(float(p[6])) == 40 or int(float(p[6]) == 41)) and \
+							(int(float(p[10])) == 40 or int(float(p[10])) == 41):
+							return p
 	
-	def extract_date_str(date_time_str):
-		return datetime.strptime(date_time_str, fmt).strftime('%Y-%m-%d')
+	def preprocess(p):
+		return (str(p[1]), float(p[4]), (datetime.strptime(p[2], fmt) - datetime.strptime(p[1], 
+			fmt)).seconds / 60.0, float(p[5]), float(p[6]), float(p[9]), float(p[10]), float(p[18]))
+			# Returns qualified lines:
+			# pickup time, trip distance (miles), trip duration (minutes), pickup lon, pickup lat,
+			# drop off lon, drop off lat, total pay amount
 	
-	lines = sc.textFile(file_name, 1).map(lambda x: x.split(','))
+	text = sc.textFile(file_name, 1).map(lambda x: x.split(','))
+	header = text.first()	
+	lines = text.filter(lambda x: x != header).filter(sanity_check)
 	
-	header = lines.first()
-	data_lines = lines.filter(lambda x: x != header).filter(remove_corrupt_data)
-	full_processed_data = data_lines.map(lambda x: (str(x[1]), float(x[3]), (datetime.strptime(x[2], \
-		fmt) - datetime.strptime(x[1], fmt)).seconds, float(x[4]), float(x[5]), float(x[6]), float(x[9]), \
-			float(x[10]), int(x[11]), float(x[12]), float(x[13]), float(x[14]), \
-				float(x[15]), float(x[16]), float(x[17]), float(x[18])))
-	dated_data = full_processed_data.map(lambda x: (extract_date_str(x[0]), (x[1], x[2], x[3], x[4], \
-		x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15])))
+	raw_data = lines.map(preprocess).filter(lambda line: \
+		datetime.strptime(line[0], fmt).weekday() == 1) # dayNum
+		
+	processed_data = raw_data.map(lambda x: ((x[0], gridify(x[3], x[4], grid_factor)), 
+		(x[1], x[2], x[1] / x[2], gridify(x[5], x[6], grid_factor), x[7]))).filter(lambda v: v[1][2] < 3.3)
 	
 	# Note the pre-processed data takes following form:
 	# (Key, Value)
-	# Key: pick up date string in form YYYY-MM-DD x[0]
-	# Value: (Passenger Count, trip time, trip distance, pickup_lon, pickup_lat, dropoff_lon, dropoff_lat,
-	# payment_type, fare_amt, extra, mta_tax, surcharge, tip_amt, tolls_amt, total_amt) x[1]
-	return dated_data
+	# Key: (Pick up time, pickup grid(lon, lat)) x[0]
+	# Value: (Trip distance (miles), trip duration (minutes), trip average speed, dropoff grid(lon, lat), 
+	# total pay amount) x[1]
+	return processed_data
 
-def generate_labeled_data(x_feature_rdd, label_rdd):
-	"""
-	Requires the training data in the form of (date, feat) and 
-	training labels in the form of (date, indicator). Performs inner join
-	on two rdds, abandon date information to generate simple (feat, indicator) pairs
-	"""
-	mix = x_feature_rdd.join(label_rdd).map(lambda (d, (x, y)): LabeledPoint(int(y), list(x)))	
-	return mix
-
-def read_DJIA_data(sc, djia):
-	data = sc.textFile(djia).map(lambda x: x.split(',')).map(lambda (x, y): (str(x), int(y)))
+def read_params(sc, d):
+	data = sc.textFile(d).map(lambda x: x.split(',')).map(lambda (x, y): (str(x), int(y)))
 	return data
 
 def read_feat(sc, ft, featureExtractor=0):
