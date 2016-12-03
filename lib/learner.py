@@ -1,85 +1,79 @@
-# '''
-# Created on Nov 24, 2016
-# 
-# @author: JulianYGao
-# '''
-# 
-# from lib.utils import generate_labeled_data
-# from lib.featureExtractors import *
-# from pyspark.mllib.classification import *
-# from pyspark.mllib.clustering import KMeans, KMeansModel
-# from pyspark.mllib.tree import RandomForest, RandomForestModel
-# 
-# def train_raw(sc, data_x, data_y, weight_dest, train_method, debug=0, featureExtractor=0):
-#     
-#     if featureExtractor == 1:
-#         feat = simple_averaging_feature_extractor(data_x)
-#     elif featureExtractor == 2:
-#         feat = baseline_feature_extractor(data_x)
-#     else:
-#         feat = simple_aggregating_feature_extractor(data_x)
-#     
-#     train_features(sc, feat, data_y, weight_dest, train_method)
-# 
-# def train_features(sc, feat, labels, weight_dest, train_method):
-#     
-#     labeled_train_data = generate_labeled_data(feat, labels)    
-#     
-#     # Split data for train and validation
-#     train_data, val_data = labeled_train_data.randomSplit([0.7, 0.3])
-#     
-#     if train_method == "forest":
-#         model, trainErr, valErr = random_forest_train(train_data, val_data, numTrees=4,
-#             impurity='gini', maxDepth=10, maxBins=16)
-#     elif train_method == "kmeans":
-#         kmeans_data = feat.map(lambda (x, v): v)
-#         kmeans_train_data, kmeans_val_data = kmeans_data.randomSplit([0.7, 0.3])
-#         model, trainErr, valErr = kmeans(kmeans_train_data, kmeans_val_data, maxIter=20, runs=5)
-#     else:   # Default is SVM
-#         model, trainErr, valErr = svm_train(train_data, val_data, 
-#             iterations=2000, step=0.5, regParam=0.05)
-#         
-#     #   model.save(sc, weight_dest)  
-#     print("Training Error = " + str(trainErr)  + " out of " + str(train_data.count()) + \
-#         " samples\nValidation Error = " + str(valErr) + " out of " + str(val_data.count()) + " samples")
-# 
-# def svm_train(train_data, val_data, iterations=500, step=1.0, regParam=0.1):
-#     
-#     model = SVMWithSGD.train(train_data, iterations=iterations, step=step, regParam=regParam)
-#     
-#     trainLabelsAndPreds = train_data.map(lambda p: (p.label, model.predict(p.features)))
-#     trainErr = trainLabelsAndPreds.filter(lambda (v, p): v != p).count() / float(train_data.count())
-#         
-#     valLabelsAndPreds = val_data.map(lambda p: (p.label, model.predict(p.features)))
-#     valErr = valLabelsAndPreds.filter(lambda (v, p): v != p).count() / float(val_data.count())
-# 
-#     return model, trainErr, valErr
-# 
-# def random_forest_train(train_data, val_data, numTrees=3, impurity='gini', maxDepth=10, maxBins=16):
-#     
-#     model = RandomForest.trainClassifier(train_data, numClasses=2, categoricalFeaturesInfo={},
-#         numTrees=numTrees, featureSubsetStrategy="auto", impurity=impurity,
-#             maxDepth=maxDepth, maxBins=maxBins)
-#      
-#     predictions = model.predict(train_data.map(lambda x: x.features))
-#     trainLabelsAndPreds = train_data.map(lambda lp: lp.label).zip(predictions)
-#     trainErr = trainLabelsAndPreds.filter(lambda (v, p): v != p).count() / float(train_data.count())
-#      
-#     predictions = model.predict(val_data.map(lambda x: x.features))
-#     valLabelsAndPreds = val_data.map(lambda lp: lp.label).zip(predictions)
-#     valErr = valLabelsAndPreds.filter(lambda (v, p): v != p).count() / float(val_data.count())
-# 
-#     return model, trainErr, valErr
-# 
-# def kmeans(train_data, val_data, maxIter=200, runs=5, initializationMode="random"):
-#     
-#     clusters = KMeans.train(train_data, 2, maxIterations=maxIter, runs=runs, initializationMode=initializationMode)
-#     def error(point):
-#         center = clusters.centers[clusters.predict(point)]
-#         return math.sqrt(sum([x**2 for x in (point - center)]))
-#     squaredSumTrainError = train_data.map(lambda point: error(point)).reduce(lambda x, y: x + y)
-#     squaredSumValError = val_data.map(lambda point: error(point)).reduce(lambda x, y: x + y)
-#    
-#     return clusters, squaredSumTrainError, squaredSumValError
-#     
+'''
+Created on Nov 28, 2016
+ 
+@author: JulianYGao
+'''
+from lib.utils import *
+from operator import add
+
+def get_expected_waiting_time(data):
+    """
+    Calculate the expected waiting time for each (hr, grid) key. 
+    This value denotes the average waiting time in each grid (in minutes),
+    each hour during given week day. This value can be viewed
+    as lambda for the passenger arrival Poisson process.
+    Calculated by sum(pickup_tdelta) / # pickups for each (hr, grid) 
+    Returns (grid, hr), (expected_waiting_time, avg_number_of_pickups)
+    """
+    # Sort first so when merging keys, no need to generate list again
+    grid_time = data.map(lambda x: ((x[0][1], get_time_stamp_date(x[0][0]), 
+        get_time_stamp_hr(x[0][0])), x[0][0])).sortBy(lambda t: t[1][0])  
+        
+    # Now map from ((grid, date, hr), avg_tdelta) to ((grid, hr), avg_tdelta, # pickup)
+    avg_grid_time_tdelta = grid_time.map(lambda ((grid, date, hr), time): ((grid, date, hr), (time, 0.0, 1.0)))\
+        .reduceByKey(lambda a, b: (b[0], a[1] + get_tdelta(b[0], a[0]), a[2] + 1))\
+            .map(lambda (k, v): ((k[0], k[2]), (v[1] / v[2], v[2])))
+    
+    # Finally average again by dates
+    expected_grid_time_tdelta = avg_grid_time_tdelta.combineByKey(lambda val: (val[0], val[1], 1), lambda x,
+        val: (x[0] + val[0], x[1] + val[1], x[2] + 1), lambda x, y: (x[0] + y[0], x[1] + y[1], 
+            x[2] + y[2])).map(lambda (k, (s, n, c)): (k, s / c, n / c))
+    
+    expected_grid_time_tdelta.saveAsTextFile('data/time')
+    return expected_grid_time_tdelta
+    
+def get_average_speed(data):
+    """
+    Calculate the average speed of entire map during given hour
+    """
+    hr_speed = data.map(lambda (k, v): (get_time_stamp_hr(k[0]), v[2])).combineByKey(lambda val:\
+        (val, 1), lambda x, val: (x[0] + val, x[1] + 1), lambda x, y: (x[0] + y[0], x[1] + y[1]))\
+            .map(lambda (k, (s, c)): (k, s / c))
+    hr_speed.saveAsTextFile('data/speed')
+    return hr_speed
+
+def get_congestion_factor(sc, data, dayNum):
+    """
+    Get the congestion factor for each (grid, hr). 
+    Calculated by scaling with total number of pickup and drop off in one (grid, hr).
+    
+    """
+    hr_pickup_grid = data.map(lambda (k, v): ((get_time_stamp_hr(k[0]), k[1]), 1.0))
+    hr_dropoff_grid = data.map(lambda (k, v): ((add_time(k[0], v[1]), v[3]), 1.0))\
+        .filter(lambda (k, v): get_time_stamp_weekday(k[0]) == dayNum)\
+            .map(lambda (k, v): ((get_time_stamp_hr(k[0]), k[1]), v))
+    
+    grid = sc.union([hr_pickup_grid, hr_dropoff_grid])
+    total_hr_act = grid.map(lambda (k, v): (k[0], v)).reduceByKey(add)
+    grid_hr_act = grid.reduceByKey(add).map(lambda ((hr, grid), cnt): (hr, (grid, cnt)))
+    avg_hr_grid_cnt = total_hr_act.join(grid_hr_act)\
+        .map(lambda (hr, (total, (grid, cnt))): ((grid, hr), cnt / total))
+    
+    def standard_deviation((sum, sumSq, n)):
+        mean = sum / n
+        stddev = math.sqrt((sumSq - n * mean ** 2) / n)
+        return (mean, stddev)
+        
+    hr_avg_std = avg_hr_grid_cnt.map(lambda (k, v): (k[1], v))\
+        .combineByKey(lambda val: (val, val * val, 1), lambda x, val: (x[0] + val, x[1] + val * val, 
+            x[2] + 1), lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + 1))\
+                .mapValues(standard_deviation)
+
+    hr_avg_std.saveAsTextFile('data/stat')
+#     congestion_factor_map = 
+
+    
+def get_dropoff_payment_distribution(data):
+    pass
+
 

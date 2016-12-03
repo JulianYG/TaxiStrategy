@@ -17,8 +17,9 @@ def execute(sc, m, x, p, o, d, r, g):
 		data = read_params(sc, p)
 	else:
 		data = preprocess_taxi_data(x, d, g, sc)
-	
-	data.saveAsTextFile('data/processed')
+# 		get_expected_waiting_time(data)
+		get_congestion_factor(sc, data, d)
+
 # 			data_2 = preprocess_taxi_data('data/2016_02_x.csv', sc)
 # 			data_1 = preprocess_taxi_data(x, sc)		
 		
