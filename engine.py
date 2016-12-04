@@ -14,12 +14,16 @@ def execute(sc, m, x, p, o, d, r, g):
 	Execute the command line inputs
 	"""
 	if p: 
-		data = read_params(sc, p)
+		params = read_params(sc, p)
 	else:
-		data = preprocess_taxi_data(x, d, g, sc)
-# 		get_expected_waiting_time(data)
-		get_congestion_factor(sc, data, d)
-
+		data = preprocess_taxi_data(x, d, g, sc)		
+		time = get_expected_waiting_time(data)
+ 		v = get_average_speed(data)
+ 		alpha = get_congestion_factor(sc, data, d)
+  		prob_map = get_pickup_probability(time, v, alpha)
+		distributions = get_grid_dest_info(data)
+		params = get_params(prob_map, distributions, g)
+		save_params(sc, params, o)
 # 			data_2 = preprocess_taxi_data('data/2016_02_x.csv', sc)
 # 			data_1 = preprocess_taxi_data(x, sc)		
 		
@@ -60,7 +64,7 @@ def read_command(argv):
 	argv.add_option('-o', type=str, help="Output parameter file path")
 	argv.add_option('-d', type=int, help="Weekday", default=0)	# Monday
 	argv.add_option('-r', type=str, help="Results directory", default='results')
-	argv.add_option('-g', type=float, help="Grid factor", default = 0.00333)
+	argv.add_option('-g', type=float, help="Grid factor", default = 3)
 	
 	arg, _ = argv.parse_args()
 	return {'m': arg.m, 'x': arg.x, 'p': arg.p, 'o': arg.o,
