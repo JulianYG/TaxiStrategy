@@ -27,4 +27,3 @@ def haversine(lon1, lat1, lon2, lat2):
 def sigmoid(x, k, m):
     return 2 - 2 / (1.0 + math.exp(-k * (x - m)))
 
-

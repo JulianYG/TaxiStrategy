@@ -57,7 +57,7 @@ def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 			if p[1] != p[2]:	# pickup time different from dropoff time
 				if (isfloat(p[5]) and isfloat(p[6]) and isfloat(p[9]) and isfloat(p[10]) \
 					and isfloat(p[4]) and isfloat(p[-1])):
-					if float(p[4]) < 1000 and float(p[4]) > 0 and float(p[-1]) > 0:	
+					if float(p[4]) < 100 and float(p[4]) > 0 and float(p[-1]) > 0:	
 						# exclude anomalies (errors on mileage or charge)
 						if (int(float(p[5])) == -73 or int(float(p[5])) == -74) and \
 							(int(float(p[9])) == -73 or int(float(p[9])) == -74)\

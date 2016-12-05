@@ -57,7 +57,10 @@ def get_congestion_factor(sc, data, dayNum):
     
     def standard_deviation((s, ssq, n)):
         mean = s / n
-        stddev = math.sqrt((ssq - n * mean ** 2) / n) + 10e-20
+        if (ssq - n * mean ** 2) / n < 0:
+            stddev = 10e-20
+        else:
+            stddev = math.sqrt((ssq - n * mean ** 2) / n) + 10e-20
         return (mean, stddev)
         
     hr_avg_std = avg_hr_grid_cnt.map(lambda (k, v): (k[1], v))\
@@ -91,7 +94,7 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
         .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), round(get_grid_size(grid) / ( v * alpha))))
     grid_prob_map = cruise_time.join(waiting_time)\
         .map(lambda ((grid, hr), (c_t, w_t)): ((grid, hr), poisson_summation(w_t, int(c_t))))
-
+    grid_prob_map.coalesce(1, True).saveAsTextFile('data/prob_map_large_for_plot')
     return grid_prob_map
     # (('grid', 'hr'), p)
     
@@ -99,13 +102,22 @@ def get_grid_dest_info(data):
     
     def standard_deviation((sum0, sumSq0, sum1, sumSq1, sum2, sumSq2, n)):
         mean0 = sum0 / n
-        stddev0 = math.sqrt((sumSq0 - n * mean0 ** 2) / n) + 10e-20
+        if (sumSq0 - n * mean0 ** 2) / n < 0:
+            stddev0 = 10e-20
+        else:
+            stddev0 = math.sqrt((sumSq0 - n * mean0 ** 2) / n) + 10e-20
         mean1 = sum1 / n
-        stddev1 = math.sqrt((sumSq1 - n * mean1 ** 2) / n) + 10e-20
+        if (sumSq1 - n * mean1 ** 2) / n < 0:
+            stddev1 = 10e-20
+        else:
+            stddev1 = math.sqrt((sumSq1 - n * mean1 ** 2) / n) + 10e-20
         mean2 = sum2 / n
-        stddev2 = math.sqrt((sumSq2 - n * mean2 ** 2) / n) + 10e-20
+        if (sumSq2 - n * mean2 ** 2) / n < 0:
+            stddev2 = 10e-20
+        else:
+            stddev2 = math.sqrt((sumSq2 - n * mean2 ** 2) / n) + 10e-20
         return (mean0, stddev0, mean1, stddev1, mean2, stddev2)
-    
+
     avg_std = data.map(lambda ((pick_t, pick_g), (d, t, v, drop_g, p)): ((get_time_stamp_hr(pick_t), 
         pick_g), (d, t, drop_g, p))).combineByKey(lambda v: (v[0], v[0] ** 2, 
             v[1], v[1] ** 2, [v[2]], v[3], v[3] ** 2, 1), lambda x, v: (x[0] + v[0], x[1] + v[0] ** 2,
@@ -113,6 +125,7 @@ def get_grid_dest_info(data):
                     lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4],
                         x[5] + y[5], x[6] + y[6], x[7] + y[7])).map(lambda (k, v): ((k[1], k[0]), 
                             (standard_deviation((v[0], v[1], v[2], v[3], v[5], v[6], v[7])), v[4])))
+#     avg_std.coalesce(1, True).saveAsTextFile('data/grid_info_large_for_plot')
     return avg_std
     # (('grid', 'hr'), (dist_mean, dist_var, time_mean, time_var, payment_mean, payment_var), drop off grids)
 
