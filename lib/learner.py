@@ -51,10 +51,6 @@ def get_congestion_factor(sc, data, dayNum):
     avg_hr_grid_cnt = total_hr_act.join(grid_hr_act)\
         .map(lambda (hr, (total, (grid, cnt))): ((grid, hr), cnt / total))
     
-#     bin = avg_hr_grid_cnt.map(lambda (k, v): (k[1], [v])).reduceByKey(lambda a, b:\
-#         a + b)
-#     bin.saveAsTextFile('data/bin')
-    
     def standard_deviation((s, ssq, n)):
         mean = s / n
         if (ssq - n * mean ** 2) / n < 0:
@@ -94,7 +90,6 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
         .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), round(get_grid_size(grid) / ( v * alpha))))
     grid_prob_map = cruise_time.join(waiting_time)\
         .map(lambda ((grid, hr), (c_t, w_t)): ((grid, hr), poisson_summation(w_t, int(c_t))))
-    grid_prob_map.coalesce(1, True).saveAsTextFile('data/prob_map_large_for_plot')
     return grid_prob_map
     # (('grid', 'hr'), p)
     
@@ -125,7 +120,6 @@ def get_grid_dest_info(data):
                     lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4],
                         x[5] + y[5], x[6] + y[6], x[7] + y[7])).map(lambda (k, v): ((k[1], k[0]), 
                             (standard_deviation((v[0], v[1], v[2], v[3], v[5], v[6], v[7])), v[4])))
-#     avg_std.coalesce(1, True).saveAsTextFile('data/grid_info_large_for_plot')
     return avg_std
     # (('grid', 'hr'), (dist_mean, dist_var, time_mean, time_var, payment_mean, payment_var), drop off grids)
 
