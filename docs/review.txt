@@ -1,0 +1,8 @@
+Newspaper GAL: Newspaper Generation and Analysis of Leaning
+This project is about finding news articles that help people see the opposite side of their point of views. Very helpful for expanding horizon and critical thinking, I like it. 
+
+"LETS NOT PUT LABELS ON THIS" - WEAK SUPERVISION FOR Q-G TAGGING
+This project utilizes rules behind the scenes (in this case, law of physics) to help learning models from unlabeled datasets. Very hard and cool stuff, I definitely love it.
+
+Accelerating Fluid Simulations with Neural Networks
+Very innovative application of RCNN and LSTM in a different engineering field. Those should bring more insight into those relatively traditional fields!

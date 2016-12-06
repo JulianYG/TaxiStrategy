@@ -16,39 +16,36 @@ def execute(sc, m, x, p, o, d, r, g):
 	if p: 
 		params = read_params(sc, p)
 	else:
-		data = preprocess_taxi_data(x, d, g, sc)		
+		data = preprocess_taxi_data(x, d, g, sc)
+#  		data_1 = preprocess_taxi_data('data/2016_03_x.csv', d, g, sc)
+# 		data_2 = preprocess_taxi_data('data/2016_02_x.csv', d, g, sc)
+# 		data_3 = preprocess_taxi_data('data/2016_01_x.csv', d, g, sc)
+# 		data_4 = preprocess_taxi_data('data/2016_04_x.csv', d, g, sc)
+# 		data_5 = preprocess_taxi_data('data/2016_05_x.csv', d, g, sc)
+# 		data_6 = preprocess_taxi_data('data/2016_06_x.csv', d, g, sc)
+# 		data_7 = preprocess_taxi_data('data/2015_12_x.csv', d, g, sc)
+# 		data_8 = preprocess_taxi_data('data/2015_11_x.csv', d, g, sc)
+# 		data_9 = preprocess_taxi_data('data/2015_10_x.csv', d, g, sc)
+# 		data_10 = preprocess_taxi_data('data/2015_09_x.csv', d, g, sc)
+# 		data_11 = preprocess_taxi_data('data/2015_08_x.csv', d, g, sc)
+# 		data_12 = preprocess_taxi_data('data/2015_07_x.csv', d, g, sc)
+# 		data_13 = preprocess_taxi_data('data/2015_06_x.csv', d, g, sc)
+# 		data_14 = preprocess_taxi_data('data/2015_05_x.csv', d, g, sc)
+# 		data_15 = preprocess_taxi_data('data/2015_04_x.csv', d, g, sc)
+# 		data_16 = preprocess_taxi_data('data/2015_03_x.csv', d, g, sc)
+# 		data_17 = preprocess_taxi_data('data/2015_02_x.csv', d, g, sc)
+# 		data_18 = preprocess_taxi_data('data/2015_01_x.csv', d, g, sc)
+			
+# 		data = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8,\
+# 			 data_9, data_10, data_11, data_12, data_13, data_14, data_15, data_16, data_17, data_18])
+					
 		time = get_expected_waiting_time(data)
- 		v = get_average_speed(data)
- 		alpha = get_congestion_factor(sc, data, d)
-  		prob_map = get_pickup_probability(time, v, alpha)
+		v = get_average_speed(data)
+		alpha = get_congestion_factor(sc, data, d)
+		prob_map = get_pickup_probability(time, v, alpha)
 		distributions = get_grid_dest_info(data)
 		params = get_params(prob_map, distributions, g)
 		save_params(sc, params, o)
-# 			data_2 = preprocess_taxi_data('data/2016_02_x.csv', sc)
-# 			data_1 = preprocess_taxi_data(x, sc)		
-		
-# 		data_x = preprocess_taxi_data(x, d, g, sc)	 # original
-		
-# 			data_3 = preprocess_taxi_data('data/2016_01_x.csv', sc)
-# 			data_4 = preprocess_taxi_data('data/2016_04_x.csv', sc)
-# 			data_5 = preprocess_taxi_data('data/2016_05_x.csv', sc)
-# 			data_6 = preprocess_taxi_data('data/2016_06_x.csv', sc)
-#  		
-# 			data_7 = preprocess_taxi_data('data/2015_12_x.csv', sc)
-# 			data_8 = preprocess_taxi_data('data/2015_11_x.csv', sc)
-# 			data_9 = preprocess_taxi_data('data/2015_10_x.csv', sc)
-# 			data_10 = preprocess_taxi_data('data/2015_09_x.csv', sc)
-# 			data_11 = preprocess_taxi_data('data/2015_08_x.csv', sc)
-# 			data_12 = preprocess_taxi_data('data/2015_07_x.csv', sc)
-# 			data_13 = preprocess_taxi_data('data/2015_06_x.csv', sc)
-# 			data_14 = preprocess_taxi_data('data/2015_05_x.csv', sc)
-# 			data_15 = preprocess_taxi_data('data/2015_04_x.csv', sc)
-# 			data_16 = preprocess_taxi_data('data/2015_03_x.csv', sc)
-# 			data_17 = preprocess_taxi_data('data/2015_02_x.csv', sc)
-# 			data_18 = preprocess_taxi_data('data/2015_01_x.csv', sc)
-		
-# 			data_x = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8,\
-# 				 data_9, data_10, data_11, data_12, data_13, data_14, data_15, data_16, data_17, data_18])
 
 def read_command(argv):
 	"""
