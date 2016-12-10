@@ -4,20 +4,9 @@ import datetime
 import os
 import sys
 import numpy as np
-from lib.mathUtils import *
+from mathUtils import *
 
 fmt = '%Y-%m-%d %H:%M:%S'
-
-def gridify(lon, lat, grid_factor):
-	"""
-	Both small and large extremities factors will result in bad results
-	"""
-	tile = 0.00111 * grid_factor
-	lat_range = (math.floor(lat / tile), math.ceil(lat / tile))
-	lat_grid = (str(lat_range[0] * tile), str(lat_range[1] * tile))
-	lon_range = (math.floor(lon / tile), math.ceil(lon / tile))
-	lon_grid = (str(lon_range[0] * tile), str(lon_range[1] * tile))
-	return (lon_grid, lat_grid)
 
 def get_time_stamp_hr(date_time_str):
 	return datetime.datetime.strptime(date_time_str, fmt).strftime('%H')
@@ -101,7 +90,15 @@ def process_locations(locs, g):
 		center = ((float(lon0) + float(lon1)) / 2, (float(lat0) + float(lat1)) / 2)
 		avg_lon += center[0] / n
 		avg_lat += center[1] / n
-	return gridify(avg_lon, avg_lat, g)
+# 	return gridify(avg_lon, avg_lat, g)
+
+	# Find average for each of the grid first, for purpose of plotting
+	def convert_to_point(loc):
+		point = centerize_grid(((float(loc[0][0]), float(loc[0][1])), (float(loc[1][0]), float(loc[1][1]))))
+		return str(point[0]) + ':' + str(point[1]) 
+	locs = ' '.join(convert_to_point(l) for l in locs)
+	
+	return locs, gridify(avg_lon, avg_lat, g)
 
 def save_params(sc, params, o):
 	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c)):\

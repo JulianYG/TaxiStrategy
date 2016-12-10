@@ -3,9 +3,15 @@ from collections import defaultdict as ddict
 import gmaps
 import plotly.plotly as py
 import plotly.graph_objs as go
+from utils import *
+import random
+import sys
+# from pyspark import SparkContext
  
 gmaps.configure(api_key="AIzaSyCB9rVMgEbTcYaQhnbM6jBzLjFLXLaGJZ8")
- 
+csv.field_size_limit(sys.maxsize)
+# sc = SparkContext(appName='plot')
+
 def plot_histogram(b):
     data = go.Histogram(x=b)
     layout = go.Layout(yaxis=dict(type='log', autorange=True))
@@ -27,7 +33,8 @@ def plot_probability_map():
             lon1 = float(row[1].replace("'", ""))
             weight = float(row[-1].replace("'", ""))
             time = int(row[4].replace("'", ""))
-            point = ((lat0 + lat1) / 2, (lon0 + lon1) / 2, weight)
+            dot = centerize_grid(((lon0, lon1), (lat0, lat1)))
+            point = (dot[1], dot[0], weight)
             timeMap[time].append(point)
      
     overlapped_map = gmaps.Map()
@@ -40,4 +47,29 @@ def plot_probability_map():
  
     overlapped_map
 
+def plot_dropoff_distribution():
+    timeLocMap = ddict(list)
+    # d = sc.textFile('dropmap')
+    with open('params/dropmap', 'r') as data:
+        reader = csv.reader(data, delimiter=',')
+        for row in reader:
+            dot = centerize_grid(((float(row[0]), float(row[1])), 
+                (float(row[2]), float(row[3]))))
+            locs = row[5].split(' ')
+            for loc in locs:
+                coords = loc.split(':')
+                timeLocMap[(int(row[4]), dot)].append((float(coords[1]), float(coords[0])))
+                # lat, lon
 
+    gmap = gmaps.Map()
+    start = random.choice(timeLocMap.keys())
+    print start
+    print timeLocMap[start]
+    pickup_layer = gmaps.symbol_layer([(start[1][1], start[1][0])], fill_color='green', 
+        stroke_color='green', scale=2)
+    dropoff_layer = gmaps.Heatmap(data=timeLocMap[start])
+    gmap.add_layer(pickup_layer)
+    gmap.add_layer(dropoff_layer)
+    gmap
+
+plot_dropoff_distribution()

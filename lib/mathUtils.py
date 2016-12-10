@@ -12,6 +12,9 @@ def poisson_summation(lam, t):
         s += lam ** i * math.exp(-lam) / math.factorial(i)
     return s
 
+def sigmoid(x, k, m):
+    return 2 - 2 / (1.0 + math.exp(-k * (x - m)))
+
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points 
@@ -24,6 +27,18 @@ def haversine(lon1, lat1, lon2, lat2):
     a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
     return 3959.0 * 2 * math.asin(math.sqrt(a))    # Radius of earth in miles
 
-def sigmoid(x, k, m):
-    return 2 - 2 / (1.0 + math.exp(-k * (x - m)))
+def gridify(lon, lat, grid_factor):
+    """
+    Both small and large extremities factors will result in bad results
+    """
+    tile = 0.00111 * grid_factor
+    lat_range = (math.floor(lat / tile), math.ceil(lat / tile))
+    lat_grid = (str(lat_range[0] * tile), str(lat_range[1] * tile))
+    lon_range = (math.floor(lon / tile), math.ceil(lon / tile))
+    lon_grid = (str(lon_range[0] * tile), str(lon_range[1] * tile))
+    return (lon_grid, lat_grid)
+
+def centerize_grid(coords_tuple):
+    # ((lon0, lon1), (lat0, lat1)) => (avg lon, avg lat)
+    return ((coords_tuple[0][0] + coords_tuple[0][1]) / 2, (coords_tuple[1][0] + coords_tuple[1][1]) / 2)
 
