@@ -93,7 +93,7 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
     return grid_prob_map
     # (('grid', 'hr'), p)
     
-def get_grid_dest_info(data, gf):
+def get_grid_dest_info(data):
     
     def standard_deviation((sum0, sumSq0, sum1, sumSq1, sum2, sumSq2, n)):
         mean0 = sum0 / n
@@ -120,18 +120,21 @@ def get_grid_dest_info(data, gf):
                     lambda x, y: (x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4],
                         x[5] + y[5], x[6] + y[6], x[7] + y[7])).map(lambda (k, v): ((k[1], k[0]), 
                             (standard_deviation((v[0], v[1], v[2], v[3], v[5], v[6], 
-                                v[7])), process_locations(v[4], gf))))
+                                v[7])), process_locations(v[4]))))
     # save the locations to see what it looks like
-    avg_std.map(lambda ((grid, hr), ((d_m, d_v, t_m, t_v, p_m, p_v), g)): ','.join([str(grid[0][0]), str(grid[0][1]), 
-        str(grid[1][0]), str(grid[1][1]), str(hr), g[0]])).coalesce(1, True).saveAsTextFile('dropmap')
+#     avg_std.map(lambda ((grid, hr), ((d_m, d_v, t_m, t_v, p_m, p_v), g)): ','.join([str(grid[0][0]), str(grid[0][1]), 
+#         str(grid[1][0]), str(grid[1][1]), str(hr), g[0]])).coalesce(1, True).saveAsTextFile('dropmap')
     
     return avg_std
     # (('grid', 'hr'), (dist_mean, dist_var, time_mean, time_var, payment_mean, payment_var), drop off grids)
 
 def get_params(prob_map, dist):
+    """
+    Note: (grid, hr) as key are both strings; values are floats, g is counter
+    """
     # Finally, combine to get all parameters (maybe inefficient in some joins!)
     mix = prob_map.join(dist).map(lambda ((grid, hr), (p, ((d_m, d_v, t_m, t_v, p_m, p_v), g))):\
-        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), g[1])))
+        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), g)))
     return mix
     
     

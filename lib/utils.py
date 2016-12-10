@@ -79,37 +79,58 @@ def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	# total pay amount) x[1]
 	return processed_data
 
-def process_locations(locs, g):
+def process_locations(locs):
 	"""
 	Find statistics of given list of (('lon0', 'lon1'), ('lat0', 'lat1')) grids
-	Avg: average of the center of the grids, then fit in the grid
+	Map the list of grids into a multinomial distribution with laplace smooth of 1
 	"""
-	avg_lon, avg_lat = 0, 0
-	n = len(locs)
-	for ((lon0, lon1), (lat0, lat1)) in locs:
-		center = ((float(lon0) + float(lon1)) / 2, (float(lat0) + float(lat1)) / 2)
-		avg_lon += center[0] / n
-		avg_lat += center[1] / n
-# 	return gridify(avg_lon, avg_lat, g)
-
-	# Find average for each of the grid first, for purpose of plotting
-	def convert_to_point(loc):
-		point = centerize_grid(((float(loc[0][0]), float(loc[0][1])), (float(loc[1][0]), float(loc[1][1]))))
-		return str(point[0]) + ':' + str(point[1]) 
-	locs = ' '.join(convert_to_point(l) for l in locs)
+	grid_count_map = Counter(locs)
+	total_count = sum(grid_count_map.values(), 0.0)
+	for grid in grid_count_map:
+		grid_count_map[grid] /= total_count
 	
-	return locs, gridify(avg_lon, avg_lat, g)
+# 	avg_lon, avg_lat = 0, 0
+# 	n = len(locs)
+# 	for ((lon0, lon1), (lat0, lat1)) in locs:
+# 		center = ((float(lon0) + float(lon1)) / 2, (float(lat0) + float(lat1)) / 2)
+# 		avg_lon += center[0] / n
+# 		avg_lat += center[1] / n
+# # 	return gridify(avg_lon, avg_lat, g)
+# 
+# 	# Find average for each of the grid first, for purpose of plotting
+# 	def convert_to_point(loc):
+# 		point = centerize_grid(((float(loc[0][0]), float(loc[0][1])), (float(loc[1][0]), float(loc[1][1]))))
+# 		return str(point[0]) + ':' + str(point[1]) 
+# 	locs = ' '.join(convert_to_point(l) for l in locs)
+	
+# 	return locs, gridify(avg_lon, avg_lat, g)
+	return grid_count_map
 
 def save_params(sc, params, o):
-	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c)):\
+	def counter_to_string(c):
+		def tuple_to_string(tup):
+			return '~'.join([str(tup[0][0][0]), str(tup[0][0][1]), str(tup[0][1][0]), 
+				str(tup[0][1][1])]) + ':' + str(tup[1])
+		return '|'.join(tuple_to_string(tup) for tup in c.items())
+		
+	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), g)):\
 		','.join([str(grid[0][0]), str(grid[0][1]), str(grid[1][0]), str(grid[1][1]), str(hr), 
-			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), str(c[0][0]), str(c[0][1]), 
-				str(c[1][0]), str(c[1][1])])).coalesce(1, True)
+			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), 
+				counter_to_string(g)])).coalesce(1, True)
 	txt_fmt_param.saveAsTextFile(o)
 
 def read_params(sc, p):
+	def string_to_counter(s):
+		map_dist = Counter()
+		item_list = s.split('|')
+		for item in item_list:
+			tup = item.split(':')
+			coords = tup[0].split('~')
+			map_dist[((coords[0], coords[1]), (coords[2], coords[3]))] = tup[1]
+		return map_dist
+	
 	params = sc.textFile(p).map(lambda x: x.split(','))\
-		.map(lambda x: ((((x[0], x[1]), (x[2], x[3])), x[4]), ((x[5], x[6]), (x[7], x[8]), 
-			(x[9], x[10]), ((x[11], x[12]), (x[13], x[14])))))
+		.map(lambda x: ((((x[0], x[1]), (x[2], x[3])), x[4]), ((float(x[5]), float(x[6])), 
+			(float(x[7]), float(x[8])), (float(x[9]), float(x[10])), string_to_counter(x[11]))))
 	return params
 
