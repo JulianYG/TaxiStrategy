@@ -5,18 +5,18 @@ import plotly.plotly as py
 import plotly.graph_objs as go
 from utils import *
 import random
-import sys
-# from pyspark import SparkContext
- 
-gmaps.configure(api_key="AIzaSyCB9rVMgEbTcYaQhnbM6jBzLjFLXLaGJZ8")
-csv.field_size_limit(sys.maxsize)
-# sc = SparkContext(appName='plot')
 
-def plot_histogram(b):
+gmaps.configure(api_key="AIzaSyCB9rVMgEbTcYaQhnbM6jBzLjFLXLaGJZ8")
+ 
+def plot_log_histogram(b):
     data = go.Histogram(x=b)
     layout = go.Layout(yaxis=dict(type='log', autorange=True))
     fig = go.Figure(data=[data], layout=layout)
     py.iplot(fig)
+
+def plot_histogram(b):
+    data = [go.Histogram(x=b)]
+    py.iplot(data)
      
 def plot_probability_map():
     timeMap = ddict(list)
@@ -49,7 +49,6 @@ def plot_probability_map():
 
 def plot_dropoff_distribution():
     timeLocMap = ddict(list)
-    # d = sc.textFile('dropmap')
     with open('params/dropmap', 'r') as data:
         reader = csv.reader(data, delimiter=',')
         for row in reader:
@@ -60,7 +59,6 @@ def plot_dropoff_distribution():
                 coords = loc.split(':')
                 timeLocMap[(int(row[4]), dot)].append((float(coords[1]), float(coords[0])))
                 # lat, lon
-
     gmap = gmaps.Map()
     start = random.choice(timeLocMap.keys())
     print start
@@ -72,4 +70,37 @@ def plot_dropoff_distribution():
     gmap.add_layer(dropoff_layer)
     gmap
 
-plot_dropoff_distribution()
+def read_count_map(name):
+    countMap = ddict(dict)
+    with open(name, 'r') as data:
+        reader = csv.reader(data, delimiter=',')
+        for row in reader:
+            key = (((row[0], row[1]), (row[2], row[3])), row[4])
+            dist_list, time_list, pay_list = row[5].split(' '), \
+                row[6].split(' '), row[7].split(' ')
+            dist_cnt, time_cnt, pay_cnt = [], [], []
+            for d in dist_list:
+                dist_tup = d.split(':')
+                for i in range(int(dist_tup[1])):
+                    dist_cnt.append(float(dist_tup[0])) 
+            for t in time_list:
+                time_tup = t.split(':')
+                for i in range(int(time_tup[1])):
+                    time_cnt.append(float(time_tup[0]))
+            for p in pay_list:
+                pay_tup = p.split(':')
+                for i in range(int(pay_tup[1])):
+                    pay_cnt.append(float(pay_tup[0]))
+                
+            countMap['dist'][key] = dist_cnt
+            countMap['time'][key] = time_cnt
+            countMap['pay'][key] = pay_cnt
+    return countMap
+
+cmap = read_count_map('countmap')
+catogery_to_plot = cmap['dist']
+grid_hr_key = random.choice(catogery_to_plot.keys())
+print grid_hr_key, len(catogery_to_plot[grid_hr_key])
+# print catogery_to_plot[grid_hr_key]
+plot_histogram(catogery_to_plot[grid_hr_key])
+
