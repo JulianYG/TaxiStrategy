@@ -85,8 +85,9 @@ def process_locations(locs):
 	Map the list of grids into a multinomial distribution with laplace smooth of 1
 	"""
 	grid_count_map = Counter(locs)
-	total_count = sum(grid_count_map.values(), 0.0)
+	total_count = sum(grid_count_map.values(), len(grid_count_map))
 	for grid in grid_count_map:
+		grid_count_map[grid] += 1.0
 		grid_count_map[grid] /= total_count
 	
 # 	avg_lon, avg_lat = 0, 0
