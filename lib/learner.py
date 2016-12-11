@@ -93,7 +93,7 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
     return grid_prob_map
     # (('grid', 'hr'), p)
     
-def get_grid_dest_info(data):
+def get_grid_dest_info(data, save=0):
     
     def standard_deviation((sum0, sumSq0, sum1, sumSq1, sum2, sumSq2, n)):
         mean0 = sum0 / n
@@ -123,19 +123,19 @@ def get_grid_dest_info(data):
                                 v[7])), process_locations(v[4]))))
     ##############################################################################
     # save the locations to see what it looks like
-    def separate_add((l1, l2, l3), (l4, l5, l6)):
-        return (l1 + l4, l2 + l5, l3 + l6)
-    def counter_to_string(c):
-        def tuple_to_string(tup):
-            return ':'.join([str(tup[0]), str(tup[1])])
-        return ' '.join(tuple_to_string(tup) for tup in c.items())
-       
-#     data.map(lambda ((pick_t, pick_g), (d, t, v, drop_g, p)): ((str(pick_g[0][0]), str(pick_g[0][1]), 
-#         str(pick_g[1][0]), str(pick_g[1][1]), get_time_stamp_hr(pick_t)), ([d], [t], [p]))).reduceByKey(separate_add)\
-#             .map(lambda (k, (d, t, p)): ','.join([str(k[0]), str(k[1]), str(k[2]), 
-#                 str(k[3]), str(k[4]), counter_to_string(Counter(d)), counter_to_string(Counter(t)), 
-#                 counter_to_string(Counter(p))])).coalesce(1, True).saveAsTextFile('countmap')
-    
+    if save:
+        def separate_add((l1, l2, l3), (l4, l5, l6)):
+            return (l1 + l4, l2 + l5, l3 + l6)
+        def counter_to_string(c):
+            def tuple_to_string(tup):
+                return ':'.join([str(tup[0]), str(tup[1])])
+            return ' '.join(tuple_to_string(tup) for tup in c.items())
+             
+        data.map(lambda ((pick_t, pick_g), (d, t, v, drop_g, p)): ((str(pick_g[0][0]), str(pick_g[0][1]), 
+            str(pick_g[1][0]), str(pick_g[1][1]), get_time_stamp_hr(pick_t)), ([d], [t], [p]))).reduceByKey(separate_add)\
+                .map(lambda (k, (d, t, p)): ','.join([str(k[0]), str(k[1]), str(k[2]), 
+                    str(k[3]), str(k[4]), counter_to_string(Counter(d)), counter_to_string(Counter(t)), 
+                    counter_to_string(Counter(p))])).coalesce(1, True).saveAsTextFile('countmap')
     ##############################################################################
     return avg_std
     # (('grid', 'hr'), (dist_mean, dist_var, time_mean, time_var, payment_mean, payment_var), drop off grids)
