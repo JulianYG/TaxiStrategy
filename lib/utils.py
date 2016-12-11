@@ -11,9 +11,6 @@ sfmt = '%H:%M'
 def get_time_stamp_hr(date_time_str):
 	return datetime.datetime.strptime(date_time_str, fmt).strftime('%H')
 
-def get_state_time_stamp(time_str):
-	return datetime.datetime.strptime(time_str, sfmt)
-	
 def get_time_stamp_date(date_time_str):
 	return datetime.datetime.strptime(date_time_str, fmt).strftime('%Y-%m-%d')
 
@@ -27,11 +24,17 @@ def get_tdelta(date_time_str_latter, date_time_str_former):
 def add_time(date_time_str, time):
 	return str(datetime.datetime.strptime(date_time_str, fmt) + datetime.timedelta(seconds=int(time * 60)))
 
-def get_start_end_time_stamp(time_str, tdelta):
-	old_state_time = datetime.datetime.strptime(time_str, sfmt).strftime('%H')
-	new_state_time = str(datetime.datetime.strptime(time_str, sfmt) + datetime.timedelta(seconds=int(tdelta * 60)))
-	new_state_time_hr = datetime.datetime.strptime(new_state_time, sfmt).strftime('%H')
-	return old_state_time.strftime('%H'), new_state_time, new_state_time_hr
+def get_state_time_hr(time_str):
+	return datetime.datetime.strptime(time_str, sfmt).strftime('%H')
+
+def get_state_time(time_str):
+	return datetime.datetime.strptime(time_str, sfmt)
+
+def get_state_time_stamp(time_str, tdelta):
+	old_state_time = datetime.datetime.strptime(time_str, sfmt)
+	new_state_time = old_state_time + datetime.timedelta(seconds=int(tdelta * 60))
+	new_state_time_hr = new_state_time.strftime('%H')
+	return new_state_time, new_state_time_hr, new_state_time.strftime('%H:%M')
 
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
