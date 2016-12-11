@@ -27,6 +27,13 @@ def haversine(lon1, lat1, lon2, lat2):
     a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
     return 3959.0 * 2 * math.asin(math.sqrt(a))    # Radius of earth in miles
 
+def skew_gaussian_sample(orig_mu, sigma):
+    res = -1.0
+    mu = orig_mu - sigma / 2
+    while res <= 0.11:
+        res = np.random.normal(mu, sigma, 1)
+    return res[0]
+
 def gridify(lon, lat, grid_factor):
     """
     Both small and large extremities factors will result in bad results

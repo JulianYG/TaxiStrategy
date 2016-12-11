@@ -1,4 +1,3 @@
-import csv
 from collections import defaultdict as ddict
 import gmaps
 import plotly.plotly as py
@@ -97,10 +96,23 @@ def read_count_map(name):
             countMap['pay'][key] = pay_cnt
     return countMap
 
-cmap = read_count_map('countmap')
-catogery_to_plot = cmap['dist']
-grid_hr_key = random.choice(catogery_to_plot.keys())
-print grid_hr_key, len(catogery_to_plot[grid_hr_key])
+cmap = read_count_map('params/countmap')
+dist_to_plot = cmap['dist']
+grid_hr_key = random.choice(dist_to_plot.keys())
+print grid_hr_key, len(dist_to_plot[grid_hr_key]), 'dist'
 # print catogery_to_plot[grid_hr_key]
-plot_histogram(catogery_to_plot[grid_hr_key])
+plot_histogram(dist_to_plot[grid_hr_key])
+
+time_to_plot = cmap['time']
+grid_hr_key = random.choice(time_to_plot.keys())
+print grid_hr_key, len(time_to_plot[grid_hr_key]), 'time'
+# print catogery_to_plot[grid_hr_key]
+plot_histogram(time_to_plot[grid_hr_key])
+
+money_to_plot = cmap['pay']
+grid_hr_key = random.choice(money_to_plot.keys())
+print grid_hr_key, len(money_to_plot[grid_hr_key]), 'pay'
+# print catogery_to_plot[grid_hr_key]
+plot_histogram(money_to_plot[grid_hr_key])
+
 

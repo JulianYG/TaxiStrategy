@@ -89,9 +89,9 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
     cruise_time = congestion_factor.map(lambda ((grid, hr), alpha): (hr, (grid, alpha)))\
         .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), round(get_grid_size(grid) / ( v * alpha))))
     grid_prob_map = cruise_time.join(waiting_time)\
-        .map(lambda ((grid, hr), (c_t, w_t)): ((grid, hr), poisson_summation(w_t, int(c_t))))
+        .map(lambda ((grid, hr), (c_t, w_t)): ((grid, hr), c_t, poisson_summation(w_t, int(c_t))))
     return grid_prob_map
-    # (('grid', 'hr'), p)
+    # (('grid', 'hr'), cruise_time, p)
     
 def get_grid_dest_info(data, save=0):
     
@@ -145,8 +145,8 @@ def get_params(prob_map, dist):
     Note: (grid, hr) as key are both strings; values are floats, g is counter
     """
     # Finally, combine to get all parameters (maybe inefficient in some joins!)
-    mix = prob_map.join(dist).map(lambda ((grid, hr), (p, ((d_m, d_v, t_m, t_v, p_m, p_v), g))):\
-        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), g)))
+    mix = prob_map.join(dist).map(lambda ((grid, hr), ((c_t, p), ((d_m, d_v, t_m, t_v, p_m, p_v), g))):\
+        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c_t, g)))
     return mix
     
     

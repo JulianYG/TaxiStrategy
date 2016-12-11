@@ -3,14 +3,17 @@ from collections import Counter
 import datetime
 import os
 import sys
-import numpy as np
 from mathUtils import *
 
 fmt = '%Y-%m-%d %H:%M:%S'
+sfmt = '%H:%M'
 
 def get_time_stamp_hr(date_time_str):
 	return datetime.datetime.strptime(date_time_str, fmt).strftime('%H')
 
+def get_state_time_stamp(time_str):
+	return datetime.datetime.strptime(time_str, sfmt)
+	
 def get_time_stamp_date(date_time_str):
 	return datetime.datetime.strptime(date_time_str, fmt).strftime('%Y-%m-%d')
 
@@ -23,6 +26,12 @@ def get_tdelta(date_time_str_latter, date_time_str_former):
 
 def add_time(date_time_str, time):
 	return str(datetime.datetime.strptime(date_time_str, fmt) + datetime.timedelta(seconds=int(time * 60)))
+
+def get_start_end_time_stamp(time_str, tdelta):
+	old_state_time = datetime.datetime.strptime(time_str, sfmt).strftime('%H')
+	new_state_time = str(datetime.datetime.strptime(time_str, sfmt) + datetime.timedelta(seconds=int(tdelta * 60)))
+	new_state_time_hr = datetime.datetime.strptime(new_state_time, sfmt).strftime('%H')
+	return old_state_time.strftime('%H'), new_state_time, new_state_time_hr
 
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
@@ -114,9 +123,9 @@ def save_params(sc, params, o):
 				str(tup[0][1][1])]) + ':' + str(tup[1])
 		return '|'.join(tuple_to_string(tup) for tup in c.items())
 		
-	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), g)):\
+	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c_t, g)):\
 		','.join([str(grid[0][0]), str(grid[0][1]), str(grid[1][0]), str(grid[1][1]), str(hr), 
-			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), 
+			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), str(c_t), 
 				counter_to_string(g)])).coalesce(1, True)
 	txt_fmt_param.saveAsTextFile(o)
 
@@ -132,6 +141,6 @@ def read_params(sc, p):
 	
 	params = sc.textFile(p).map(lambda x: x.split(','))\
 		.map(lambda x: ((((x[0], x[1]), (x[2], x[3])), x[4]), ((float(x[5]), float(x[6])), 
-			(float(x[7]), float(x[8])), (float(x[9]), float(x[10])), string_to_counter(x[11]))))
+			(float(x[7]), float(x[8])), (float(x[9]), float(x[10])), float(x[11]), string_to_counter(x[12]))))
 	return params
 
