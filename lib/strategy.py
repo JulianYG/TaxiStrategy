@@ -62,9 +62,9 @@ class TaxiMDP(object):
     def prob_succ_reward(self, state, action):
 
     	result = []
-    	new_location = action(state[0])
+    	new_target_location = action(state[0])
     	current_hr = get_state_time_hr(state[1])
-    	data = self.traffic_info.lookup((new_location, current_hr))
+    	data = self.traffic_info.lookup((new_target_location, current_hr))
     	if data:
     		distance_dist, time_dist, pay_dist, cruise_time, loc_trans_prob = data
     	else:

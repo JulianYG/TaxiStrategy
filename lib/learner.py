@@ -146,7 +146,7 @@ def get_params(prob_map, dist):
     """
     # Finally, combine to get all parameters (maybe inefficient in some joins!)
     mix = prob_map.join(dist).map(lambda ((grid, hr), ((c_t, p), ((d_m, d_v, t_m, t_v, p_m, p_v), g))):\
-        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c_t, g)))
+        ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c_t, p, g)))
     return mix
     
     
