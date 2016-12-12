@@ -21,6 +21,7 @@ class TaxiMDP(object):
         self.grid_scale = 0.00111 * grid_factor
         self.traffic_info = rdd
         self.boundaries = boundaries
+#         print rdd.lookup(((('-73.9926','-73.98816'),('40.75032','40.75476')),'01'))
         
     def isEnd(self, state):
         return get_state_time(state[1]) > self.t_end
@@ -59,30 +60,39 @@ class TaxiMDP(object):
 
     def prob_succ_reward(self, state, action):
         
-        curr_loc = ((float(state[0][0][0]), float(state[0][0][1])), 
+        curr_location = ((float(state[0][0][0]), float(state[0][0][1])), 
             (float(state[0][1][0]), float(state[0][1][1])))
-        target_location = action(curr_loc)
-        current_hr = get_state_time_hr(state[1])
-        data = self.traffic_info.lookup((target_location, current_hr))
-        if data:
-            # Have to make sure initial state is inside RDD
-            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data
-        else:
-            # Just use some approximation from current location
+        target_location = action(curr_location)
+        current_time_hr = get_state_time_hr(state[1])
+        
+        # Have to make sure initial state is inside RDD
+        # Current location and time is not necessarily in RDD. Return 0 in this case
+        current_info = self.traffic_info.lookup((state[0], current_time_hr))
+        if current_info:
             curr_d_dist, curr_t_dist, curr_p_dist, curr_cruise_time, _, curr_pickup_prob, _ = \
-                self.traffic_info.lookup(state)
+                current_info[0]
+        else:
+            return [(1, (state[0], current_time_hr), 0.0)]   
+        # Now it takes some time to drive to the target location
+        _, new_time_hr, new_time_str = get_state_time_stamp(state[1], curr_cruise_time)
+        new_empty_state = (target_location, new_time_str)
+            
+        data = self.traffic_info.lookup((target_location, new_time_hr))
+        
+        if data:
+            # Now if this state can be found in RDD
+            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data[0]
+        else:
+            # Just use some approximation from current location   
             distance_dist = (curr_d_dist[0] * 0.95, curr_d_dist[1] * 1.05)
             time_dist = (curr_t_dist[0] * 0.95, curr_t_dist[1] * 1.05)
             pay_dist = (curr_p_dist[0] * 0.95, curr_p_dist[1] * 1.05)
             target_pickup_prob = curr_pickup_prob * 0.75
             cruise_time = curr_cruise_time * 0.8
-            
-        new_time_str = get_state_time_stamp(state[1], cruise_time)[2]
-        new_empty_state = (target_location, new_time_str)
         
         # If didn't pickup anyone at the target location
-        pickup_prob = self.traffic_info.lookup(state)   # this prob is for not picking anyone currently
-        result = [(1 - pickup_prob, new_empty_state, self._state_reward(cruise_time, distance_dist, 
+        # this prob is for not picking anyone currently
+        result = [(1 - curr_pickup_prob, new_empty_state, self._state_reward(curr_cruise_time, distance_dist, 
             time_dist, pay_dist, target_pickup_prob))]
 
         # If pickup passenger at current location, consider future from there
@@ -92,7 +102,7 @@ class TaxiMDP(object):
 #                 _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
 #                     cruise_time + dist/v)
 #                 new_trans_state = (new_location, new_time_str)
-#                 dest_data = self.traffic_info.lookup((new_location, new_time_hr))
+#                 dest_data = self.traffic_info.lookup((new_location, new_time_hr))[0]
 #                 if dest_data:
 #                     dest_dist_dist, dest_time_dist, dest_pay_dist, _, v, dest_pickup_prob, _ = dest_data
 #                 else:
@@ -112,7 +122,7 @@ class TaxiMDP(object):
             time.append(t_curr.strftime('%H:%M'))
         # Then merge all grids and possible times
         for g in grids:
-            state += zip(g, time)
+            state += zip([g] * len(time), time)
         return state
     
     def _state_reward(self, time, (dist_m, dist_std), (time_m, time_std), 
@@ -157,19 +167,17 @@ class TaxiMDP(object):
 
 
 
-def valueIteration(mdp):
+def valueIteration(mdp, f):
     
-    V = {}
+    V = defaultdict(float)
     states = mdp.states()
-    for s in states():
-        V[s] = 0.0
-        
+
     def Q(state, action):
         return sum(prob * (reward + mdp.discount() * V[newState]) for prob, 
             newState, reward in mdp.prob_succ_reward(state, action))
     i = 0
     while True:
-        newV, policy = {}, {}
+        newV, policy = defaultdict(float), defaultdict()
         for s in states:
             if mdp.isEnd(s):
                 newV[s] = 0.0
@@ -177,6 +185,7 @@ def valueIteration(mdp):
             else:
                 newV[s], policy[s] = max((Q(s, action), \
                     action) for action in mdp.actions(s))
+#                 print s, newV[s], policy[s]
         if max(abs(newV[s] - V[s]) for s in states) < 1e-6:
             break
         i += 1
@@ -186,6 +195,7 @@ def valueIteration(mdp):
                 print '%s\t END' % s
             else:
                 print '%s\t%s\t%s' % (s, policy[s], V[s])
+    write_to_file(policy, f)
                 
 def profit_estimation(policy, initial_state, info, iters=80):
     """
@@ -199,7 +209,7 @@ def profit_estimation(policy, initial_state, info, iters=80):
         state = initial_state
         while True:
             next_loc = policy[state](state)
-            time_dist = 
+            time_dist = 3
         
     
     

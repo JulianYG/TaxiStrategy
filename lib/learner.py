@@ -87,11 +87,11 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
         return width + height   # in miles
         
     cruise_time = congestion_factor.map(lambda ((grid, hr), alpha): (hr, (grid, alpha)))\
-        .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), (round(get_grid_size(grid) / ( v * alpha), v))))
+        .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), (round(get_grid_size(grid) / (v * alpha)), v)))
     grid_prob_map = cruise_time.join(waiting_time)\
-        .map(lambda ((grid, hr), ((c_t, v), w_t)): ((grid, hr), c_t, v, poisson_summation(w_t, int(c_t))))
+        .map(lambda ((grid, hr), ((c_t, v), w_t)): ((grid, hr), (c_t, v, poisson_summation(w_t, int(c_t)))))
     return grid_prob_map
-    # (('grid', 'hr'), cruise_time, v, p)
+    # (('grid', 'hr'), (cruise_time, v, p))
     
 def get_grid_dest_info(data, save=0):
     

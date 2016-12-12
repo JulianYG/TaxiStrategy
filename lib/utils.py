@@ -1,5 +1,5 @@
 import csv
-from collections import Counter
+from collections import Counter, defaultdict
 import datetime
 import os
 import sys
@@ -37,8 +37,8 @@ def get_state_time_stamp(time_str, tdelta):
 	return new_state_time, new_state_time_hr, new_state_time.strftime('%H:%M')
 
 def time_range(start_time, end_time):
-	for n in range(int((end_time - start_time).seconds / 60.0)):
-		yield start_time + datetime.timedelta(n)
+	for n in range(0, int((end_time - start_time).seconds) + 1, 60):
+		yield start_time + datetime.timedelta(seconds=n)
 
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
@@ -122,6 +122,12 @@ def process_locations(locs):
 	
 # 	return locs, gridify(avg_lon, avg_lat, g)
 	return grid_count_map
+
+def write_to_file(dic, file):
+	with open(file, 'w') as csv_file:
+		writer = csv.writer(csv_file)
+		for key, value in dic.items():
+			writer.writerow([key, str(value).split(' ')[2].split('.')[1][1:]])
 
 def save_params(sc, params, o):
 	def counter_to_string(c):
