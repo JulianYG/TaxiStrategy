@@ -36,7 +36,7 @@ def execute(sc, m, x, p, o, d, r, g):
 # 		data_16 = preprocess_taxi_data('data/2015_03_x.csv', d, g, sc)
 # 		data_17 = preprocess_taxi_data('data/2015_02_x.csv', d, g, sc)
 # 		data_18 = preprocess_taxi_data('data/2015_01_x.csv', d, g, sc)
-# 			
+#  			
 # 		data = sc.union([data_1, data_2, data_3, data_4, data_5, data_6, data_7, data_8,\
 # 			 data_9, data_10, data_11, data_12, data_13, data_14, data_15, data_16, data_17, data_18])
 					
@@ -75,7 +75,7 @@ if __name__ == '__main__':
 	from pyspark import SparkContext, SparkConf
 	arg = read_command(sys.argv[1:])
 	conf = SparkConf().setAppName('taxi')
-	conf.set('spark.executor.heartbeatInterval', '3600s')
+# 	conf.set('spark.executor.heartbeatInterval', '3600s')
 	sc = SparkContext('local[4]', '', conf=conf)
 	execute(sc, **arg)
 	sc.stop()
