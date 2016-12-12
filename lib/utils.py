@@ -36,6 +36,10 @@ def get_state_time_stamp(time_str, tdelta):
 	new_state_time_hr = new_state_time.strftime('%H')
 	return new_state_time, new_state_time_hr, new_state_time.strftime('%H:%M')
 
+def time_range(start_time, end_time):
+	for n in range(int((end_time - start_time).seconds / 60.0)):
+		yield start_time + datetime.timedelta(n)
+
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
 	Generate taxi data in the form of 
