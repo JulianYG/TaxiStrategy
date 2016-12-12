@@ -128,7 +128,7 @@ def save_params(sc, params, o):
 		
 	txt_fmt_param = params.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), c_t, p, g)):\
 		','.join([str(grid[0][0]), str(grid[0][1]), str(grid[1][0]), str(grid[1][1]), str(hr), 
-			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), str(c_t), str(p)
+			str(d_m), str(d_v), str(t_m), str(t_v), str(p_m), str(p_v), str(c_t), str(p), 
 				counter_to_string(g)])).coalesce(1, True)
 	txt_fmt_param.saveAsTextFile(o)
 
