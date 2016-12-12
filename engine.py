@@ -72,8 +72,10 @@ def read_command(argv):
 		'd': arg.d, 'r': arg.r, 'g': arg.g}
 
 if __name__ == '__main__':
-	from pyspark import SparkContext
+	from pyspark import SparkContext, SparkConf
 	arg = read_command(sys.argv[1:])
-	sc = SparkContext(appName="taxi")
+	conf = SparkConf().setAppName('taxi')
+	conf.set('spark.executor.heartbeatInterval', '3600s')
+	sc = SparkContext(conf=conf)
 	execute(sc, **arg)
 	sc.stop()
