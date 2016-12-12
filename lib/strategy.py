@@ -60,6 +60,7 @@ class TaxiMDP(object):
 
     def prob_succ_reward(self, state, action):
         
+        result = []
         curr_location = ((float(state[0][0][0]), float(state[0][0][1])), 
             (float(state[0][1][0]), float(state[0][1][1])))
         target_location = action(curr_location)
@@ -69,8 +70,7 @@ class TaxiMDP(object):
         # Current location and time is not necessarily in RDD. Return 0 in this case
         current_info = self.traffic_info.get((state[0], current_time_hr))
         if current_info:
-            curr_d_dist, curr_t_dist, curr_p_dist, curr_cruise_time, _, curr_pickup_prob, _ = \
-                current_info
+            _, _, _, curr_cruise_time, _, curr_pickup_prob, _ = current_info
         else:
             return [(1, state, 0.0)]   
         # Now it takes some time to drive to the target location
@@ -81,30 +81,46 @@ class TaxiMDP(object):
         
         if data:
             # Now if this state can be found in RDD
-            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data
+            # If didn't pickup anyone at the target location
+            # this prob is for not picking anyone currently
+            distance_dist, time_dist, pay_dist, cruise_time, v, \
+                target_pickup_prob, dropoff_prob = data
+            result.append((1 - curr_pickup_prob, new_empty_state, 
+                self._state_reward(curr_cruise_time, distance_dist, 
+                    time_dist, pay_dist, target_pickup_prob)))
         else:
             # If is not in the database, then must have not been visited for a long time
-            return [(1, (target_location, new_time_str), 0.0)]
-        
-        # If didn't pickup anyone at the target location
-        # this prob is for not picking anyone currently
-        result = [(1 - curr_pickup_prob, new_empty_state, self._state_reward(curr_cruise_time, distance_dist, 
-            time_dist, pay_dist, target_pickup_prob))]
+            result.append((1, (target_location, new_time_str), 0.0))
+            return result
 
         # If pickup passenger at current location, consider future from there
-        for new_location in dropoff_prob.keys():
+        for dropoff_grid in dropoff_prob:
+            new_location = ((float(dropoff_grid[0][0]), float(dropoff_grid[0][1])), 
+                (float(dropoff_grid[1][0]), float(dropoff_grid[1][1])))
             if new_location[0][0] > self.boundaries[0] and new_location[0][1] < self.boundaries[1]\
                 and new_location[1][0] > self.boundaries[2] and new_location[1][1] < self.boundaries[3]:
-                _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
-                    cruise_time + dist/v)
+                
+                # scale distance with 0.9
+                distance = manhattan_distance(new_location, curr_location) * 0.9   
+                running_time = cruise_time + distance / v
+                # Since picked up at new place, spent cruise time there
+                _, new_time_hr, new_time_str = get_state_time_stamp(state[1], running_time)
+
                 new_trans_state = (new_location, new_time_str)
                 dest_data = self.traffic_info.get((new_location, new_time_hr))
                 if dest_data:
-                    dest_dist_dist, dest_time_dist, dest_pay_dist, _, v, dest_pickup_prob, _ = dest_data
+                    dest_dist_dist, dest_time_dist, dest_pay_dist, \
+                        _, _, dest_pickup_prob, _ = dest_data
                 else:
-                     result.append()
-                result.append((pickup_prob * dropoff_prob[new_location], new_trans_state, 
-                    self._state_reward(cruise_time + dist/v, dest_dist_dist, dest_time_dist, dest_pay_dist)))
+                    result.append((target_pickup_prob * dropoff_prob[dropoff_grid], 
+                        new_trans_state, 0.0))
+                    continue
+                
+                # Not sure if this is the correct reward formula, when combining two locs
+                result.append((target_pickup_prob * dropoff_prob[dropoff_grid], 
+                    new_trans_state, self._state_reward(running_time, dest_dist_dist, 
+                        dest_time_dist, (dest_pay_dist[0] + pay_dist[0], 
+                            dest_pay_dist[1]), dest_pickup_prob)))
         return result
 
     def discount(self):

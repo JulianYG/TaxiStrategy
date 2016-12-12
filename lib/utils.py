@@ -115,7 +115,6 @@ def write_to_file(pi, V, file):
 			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
 				str(state[0][1][1]), str(state[1]), str(V[state]), str(pi[state])\
 					.split(' ')[2].split('.')[1][1:]])
-# 			writer.writerow([key, value])
 
 def save_params(sc, params, o):
 	def counter_to_string(c):
@@ -137,7 +136,7 @@ def read_params(sc, p):
 		for item in item_list:
 			tup = item.split(':')
 			coords = tup[0].split('~')
-			map_dist[((coords[0], coords[1]), (coords[2], coords[3]))] = tup[1]
+			map_dist[((coords[0], coords[1]), (coords[2], coords[3]))] = float(tup[1])
 		return map_dist
 	
 	params = sc.textFile(p).map(lambda x: x.split(','))\

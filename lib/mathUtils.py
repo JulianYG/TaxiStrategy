@@ -49,3 +49,9 @@ def centerize_grid(coords_tuple):
     # ((lon0, lon1), (lat0, lat1)) => (avg lon, avg lat)
     return ((coords_tuple[0][0] + coords_tuple[0][1]) / 2, (coords_tuple[1][0] + coords_tuple[1][1]) / 2)
 
+def manhattan_distance(loc0, loc1):
+    (lon0, lat0), (lon1, lat1) = centerize_grid(loc0), centerize_grid(loc1)
+    return haversine(lon0, lat0, lon0, lat1) + haversine(lon0, lat1, lon1, lat1)
+
+
+
