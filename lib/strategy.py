@@ -18,7 +18,7 @@ class TaxiMDP(object):
         self.t_start = start_time
         self.g_start = start_grid
         self.gamma = discount
-        self.self.grid_scale = 0.0111 * grid_factor
+        self.grid_scale = 0.0111 * grid_factor
         self.traffic_info = rdd
         self.boundaries = boundaries
         
