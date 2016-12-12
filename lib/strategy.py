@@ -66,10 +66,10 @@ class TaxiMDP(object):
         data = self.traffic_info.lookup((target_location, current_hr))
         if data:
             # Have to make sure initial state is inside RDD
-            distance_dist, time_dist, pay_dist, cruise_time, target_pickup_prob, dropoff_prob = data
+            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data
         else:
             # Just use some approximation from current location
-            curr_d_dist, curr_t_dist, curr_p_dist, curr_cruise_time, curr_pickup_prob, _ = \
+            curr_d_dist, curr_t_dist, curr_p_dist, curr_cruise_time, _, curr_pickup_prob, _ = \
                 self.traffic_info.lookup(state)
             distance_dist = (curr_d_dist[0] * 0.95, curr_d_dist[1] * 1.05)
             time_dist = (curr_t_dist[0] * 0.95, curr_t_dist[1] * 1.05)
@@ -90,15 +90,15 @@ class TaxiMDP(object):
 #             if new_location[0][0] > self.boundaries[0] and new_location[0][1] < self.boundaries[1]\
 #                 and new_location[1][0] > self.boundaries[2] and new_location[1][1] < self.boundaries[3]:
 #                 _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
-#                     cruise_time + )
+#                     cruise_time + dist/v)
 #                 new_trans_state = (new_location, new_time_str)
 #                 dest_data = self.traffic_info.lookup((new_location, new_time_hr))
 #                 if dest_data:
-#                     dest_dist_dist, dest_time_dist, dest_pay_dist, _, dest_pickup_prob, _ = dest_data
+#                     dest_dist_dist, dest_time_dist, dest_pay_dist, _, v, dest_pickup_prob, _ = dest_data
 #                 else:
 #                     
 #                 result.append((pickup_prob * dropoff_prob[new_location], new_trans_state, 
-#                     self._state_reward(cruise_time + , dest_dist_dist, dest_time_dist, dest_pay_dist)))
+#                     self._state_reward(cruise_time + dist/v, dest_dist_dist, dest_time_dist, dest_pay_dist)))
         return result
 
     def discount(self):
@@ -194,7 +194,7 @@ def profit_estimation(policy, initial_state, info, iters=80):
     """
     for _ in iters:
 
-        distance_dist, time_dist, pay_dist, cruise_time, target_pickup_prob, \
+        distance_dist, time_dist, pay_dist, cruise_time, v, target_pickup_prob, \
             dropoff_prob = info.lookup(initial_state)
         state = initial_state
         while True:
