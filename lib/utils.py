@@ -105,29 +105,17 @@ def process_locations(locs):
 	for grid in grid_count_map:
 		grid_count_map[grid] += 1.0
 		grid_count_map[grid] /= total_count
-	
-# 	avg_lon, avg_lat = 0, 0
-# 	n = len(locs)
-# 	for ((lon0, lon1), (lat0, lat1)) in locs:
-# 		center = ((float(lon0) + float(lon1)) / 2, (float(lat0) + float(lat1)) / 2)
-# 		avg_lon += center[0] / n
-# 		avg_lat += center[1] / n
-# # 	return gridify(avg_lon, avg_lat, g)
-# 
-# 	# Find average for each of the grid first, for purpose of plotting
-# 	def convert_to_point(loc):
-# 		point = centerize_grid(((float(loc[0][0]), float(loc[0][1])), (float(loc[1][0]), float(loc[1][1]))))
-# 		return str(point[0]) + ':' + str(point[1]) 
-# 	locs = ' '.join(convert_to_point(l) for l in locs)
-	
-# 	return locs, gridify(avg_lon, avg_lat, g)
+
 	return grid_count_map
 
-def write_to_file(dic, file):
+def write_to_file(pi, V, file):
 	with open(file, 'w') as csv_file:
 		writer = csv.writer(csv_file)
-		for key, value in dic.items():
-			writer.writerow([key, str(value).split(' ')[2].split('.')[1][1:]])
+		for state in pi:
+			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
+				str(state[0][1][1]), str(state[1]), str(V[state]), str(pi[state])\
+					.split(' ')[2].split('.')[1][1:]])
+# 			writer.writerow([key, value])
 
 def save_params(sc, params, o):
 	def counter_to_string(c):

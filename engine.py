@@ -76,6 +76,6 @@ if __name__ == '__main__':
 	arg = read_command(sys.argv[1:])
 	conf = SparkConf().setAppName('taxi')
 	conf.set('spark.executor.heartbeatInterval', '3600s')
-	sc = SparkContext(conf=conf)
+	sc = SparkContext('local[4]', '', conf=conf)
 	execute(sc, **arg)
 	sc.stop()

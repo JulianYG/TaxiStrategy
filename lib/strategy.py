@@ -19,9 +19,9 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
-        self.traffic_info = rdd
+        self.grids = rdd.map(lambda (k, v): k[0]).distinct().collect()
+        self.traffic_info = rdd.collectAsMap()
         self.boundaries = boundaries
-#         print rdd.lookup(((('-73.9926','-73.98816'),('40.75032','40.75476')),'01'))
         
     def isEnd(self, state):
         return get_state_time(state[1]) > self.t_end
@@ -67,28 +67,24 @@ class TaxiMDP(object):
         
         # Have to make sure initial state is inside RDD
         # Current location and time is not necessarily in RDD. Return 0 in this case
-        current_info = self.traffic_info.lookup((state[0], current_time_hr))
+        current_info = self.traffic_info.get((state[0], current_time_hr))
         if current_info:
             curr_d_dist, curr_t_dist, curr_p_dist, curr_cruise_time, _, curr_pickup_prob, _ = \
-                current_info[0]
+                current_info
         else:
-            return [(1, (state[0], current_time_hr), 0.0)]   
+            return [(1, state, 0.0)]   
         # Now it takes some time to drive to the target location
         _, new_time_hr, new_time_str = get_state_time_stamp(state[1], curr_cruise_time)
         new_empty_state = (target_location, new_time_str)
             
-        data = self.traffic_info.lookup((target_location, new_time_hr))
+        data = self.traffic_info.get((target_location, new_time_hr))
         
         if data:
             # Now if this state can be found in RDD
-            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data[0]
+            distance_dist, time_dist, pay_dist, cruise_time, _, target_pickup_prob, dropoff_prob = data
         else:
-            # Just use some approximation from current location   
-            distance_dist = (curr_d_dist[0] * 0.95, curr_d_dist[1] * 1.05)
-            time_dist = (curr_t_dist[0] * 0.95, curr_t_dist[1] * 1.05)
-            pay_dist = (curr_p_dist[0] * 0.95, curr_p_dist[1] * 1.05)
-            target_pickup_prob = curr_pickup_prob * 0.75
-            cruise_time = curr_cruise_time * 0.8
+            # If is not in the database, then must have not been visited for a long time
+            return [(1, (target_location, new_time_str), 0.0)]
         
         # If didn't pickup anyone at the target location
         # this prob is for not picking anyone currently
@@ -96,19 +92,19 @@ class TaxiMDP(object):
             time_dist, pay_dist, target_pickup_prob))]
 
         # If pickup passenger at current location, consider future from there
-#         for new_location in dropoff_prob.keys():
-#             if new_location[0][0] > self.boundaries[0] and new_location[0][1] < self.boundaries[1]\
-#                 and new_location[1][0] > self.boundaries[2] and new_location[1][1] < self.boundaries[3]:
-#                 _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
-#                     cruise_time + dist/v)
-#                 new_trans_state = (new_location, new_time_str)
-#                 dest_data = self.traffic_info.lookup((new_location, new_time_hr))[0]
-#                 if dest_data:
-#                     dest_dist_dist, dest_time_dist, dest_pay_dist, _, v, dest_pickup_prob, _ = dest_data
-#                 else:
-#                     
-#                 result.append((pickup_prob * dropoff_prob[new_location], new_trans_state, 
-#                     self._state_reward(cruise_time + dist/v, dest_dist_dist, dest_time_dist, dest_pay_dist)))
+        for new_location in dropoff_prob.keys():
+            if new_location[0][0] > self.boundaries[0] and new_location[0][1] < self.boundaries[1]\
+                and new_location[1][0] > self.boundaries[2] and new_location[1][1] < self.boundaries[3]:
+                _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
+                    cruise_time + dist/v)
+                new_trans_state = (new_location, new_time_str)
+                dest_data = self.traffic_info.get((new_location, new_time_hr))
+                if dest_data:
+                    dest_dist_dist, dest_time_dist, dest_pay_dist, _, v, dest_pickup_prob, _ = dest_data
+                else:
+                     result.append()
+                result.append((pickup_prob * dropoff_prob[new_location], new_trans_state, 
+                    self._state_reward(cruise_time + dist/v, dest_dist_dist, dest_time_dist, dest_pay_dist)))
         return result
 
     def discount(self):
@@ -116,18 +112,17 @@ class TaxiMDP(object):
     
     def states(self):
         # First get all grids
-        grids = self.traffic_info.map(lambda (k, v): k[0]).distinct().collect()
         time, state = [], []
         for t_curr in time_range(get_state_time(self.t_start), self.t_end):
             time.append(t_curr.strftime('%H:%M'))
         # Then merge all grids and possible times
-        for g in grids:
+        for g in self.grids:
             state += zip([g] * len(time), time)
         return state
     
     def _state_reward(self, time, (dist_m, dist_std), (time_m, time_std), 
         (pay_m, pay_std), prob):
-        return math.exp(prob) * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
+        return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
             (dist_m - dist_std / 2.0)))
         
     def _stay(self, loc):
@@ -185,17 +180,14 @@ def valueIteration(mdp, f):
             else:
                 newV[s], policy[s] = max((Q(s, action), \
                     action) for action in mdp.actions(s))
-#                 print s, newV[s], policy[s]
-        if max(abs(newV[s] - V[s]) for s in states) < 1e-6:
+        if max(abs(newV[s] - V[s]) for s in states) < 1e-5:
             break
+        V = newV
         i += 1
-        print '============================================\nIteration ' + str(i)
-        for s in states:
-            if mdp.isEnd(s):
-                print '%s\t END' % s
-            else:
-                print '%s\t%s\t%s' % (s, policy[s], V[s])
-    write_to_file(policy, f)
+        print 'Iteration ' + str(i) + ' ============================================'
+        bestV, bestS =  max((V[s], s) for s in states) 
+        print bestV, bestS, str(policy[bestS]).split(' ')[2].split('.')[1][1:]
+    write_to_file(policy, V, f)
                 
 def profit_estimation(policy, initial_state, info, iters=80):
     """
