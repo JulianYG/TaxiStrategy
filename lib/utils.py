@@ -117,8 +117,8 @@ def write_to_file(pi, V, f):
 		writer = csv.writer(csv_file)
 		for state in pi:
 			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
-				str(state[0][1][1]), str(state[1]), str(V[state]), str(pi[state])\
-					.split(' ')[2].split('.')[1][1:]])
+				str(state[0][1][1]), str(state[1]), str(V[state]), pi[state][0][0], pi[state][0][1],
+					pi[state][1][0], pi[state][1][1]])
 
 def save_params(sc, params, o):
 	def counter_to_string(c):

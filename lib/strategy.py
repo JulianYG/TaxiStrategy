@@ -20,7 +20,7 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
-        self.grids = self._generate_grids(boundaries, grid_factor)
+        self.grids = rdd.map(lambda (k, v): k[0]).distinct().collect() #self._generate_grids(boundaries)
         self.hotspots = self._sort_hotspots(rdd)
         self.traffic_info = rdd.collectAsMap()
         self.boundaries = boundaries
@@ -63,7 +63,7 @@ class TaxiMDP(object):
 
         # Don't consider all grids, but some of them... Only return sets of hot spots
         # Make top k as a parameter
-        return result + self.hotspots[state[1]]
+        return result + self.hotspots[get_state_time_hr(state[1])]
 
     def prob_succ_reward(self, state, action):
         
@@ -77,9 +77,9 @@ class TaxiMDP(object):
         # Current location and time is not necessarily in RDD. Return 0 in this case
         current_info = self.traffic_info.get((state[0], current_time_hr))
         if current_info:
-            _, _, _, curr_cruise_time, v, pickup_prob, _ = current_info
+            _, _, _, curr_cruise_time, v, _, _ = current_info
         else:
-            curr_cruise_time, v, pickup_prob = 2.0, 0.18, 0.0
+            curr_cruise_time, v = 2.0, 0.18
             # Doesn't really matter since pickup prob should be 0
 
         ##### Decide to abandon notion of picking someone up in current grid #####
@@ -87,34 +87,35 @@ class TaxiMDP(object):
         # Now it takes some time to drive to the target location
         target_location = ((float(target_location_str[0][0]), float(target_location_str[0][1])),
             (float(target_location_str[1][0]), float(target_location_str[1][1])))
-        
-        passing_grids = path_approximation(curr_location, target_location, self.grid_scale)
         travel_time = curr_cruise_time
-        for pg in passing_grids:
-            if pg in self.traffic_info:
-                travel_time += self.traffic_info[pg][3]
-            else:
-                travel_time += get_grid_size(pg) / v  
-                # Average time needed to go across one grid
         
-        travel_time = manhattan_distance(target_location, curr_location) / v
-        _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
-            curr_cruise_time + travel_time)
+        # This is more accurate, but too slow for Brehensam's algorithm
+        # passing_grids = path_approximation(curr_location, target_location, self.grid_scale)
+
+        # for pg in passing_grids:
+        #     if pg in self.traffic_info:
+        #         travel_time += self.traffic_info[pg][3]
+        #     else:
+        #         travel_time += get_grid_size(pg) / v  
+        #         # Average time needed to go across one grid
         
-        new_empty_state = (target_location, new_time_str)
+        travel_time += manhattan_distance(target_location, curr_location) / v
+        _, new_time_hr, new_time_str = get_state_time_stamp(state[1], travel_time)
+        new_empty_state = (target_location_str, new_time_str)
         
-        data = self.traffic_info.get((target_location, new_time_hr))
+        data = self.traffic_info.get((target_location_str, new_time_hr))
         
         if data:
             # Now if this state can be found in RDD
             # If not picking anyone currently
             distance_dist, time_dist, pay_dist, _, v, \
                 target_pickup_prob, _ = data
-            result.append((1, new_empty_state, self._state_reward(curr_cruise_time \
-                + travel_time, distance_dist, time_dist, pay_dist, target_pickup_prob)))
+            reward = self._state_reward(travel_time, distance_dist, time_dist, 
+                pay_dist, target_pickup_prob)
+            result.append((1, new_empty_state, reward))
         else:
             # If is not in the database, then must have not been visited for a long time
-            result.append((1, (target_location, new_time_str), 0.0))
+            result.append((1, new_empty_state, 0.0))
 
         return result
 
@@ -153,11 +154,14 @@ class TaxiMDP(object):
             # Use some randomness to add robustness
         return hotspots
 
-    def _generate_grids(boundaries):
+    def _generate_grids(self, boundaries):
+        # Choice 1: Generating the entire grid within the whole range. Not sure
+        # if computationally feasible
+        # Choice 2: Grabbing the grids which contains data
         lon0, lon1, lat0, lat1 = boundaries
-        lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, 
+        lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, \
             math.floor(lat0 / self.grid_scale) * self.grid_scale
-        lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, 
+        lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, \
             math.ceil(lat1 / self.grid_scale) * self.grid_scale
         lon_range = np.arange(lon_lower, lon_higher + self.grid_scale, self.grid_scale)
         lat_range = np.arange(lat_lower, lat_higher + self.grid_scale, self.grid_scale)
@@ -215,6 +219,7 @@ def valueIteration(mdp, f):
             newState, reward in mdp.prob_succ_reward(state, action))
     i = 0
     while True:
+        print 'Iteration ' + str(i) + ' ============================================' 
         newV, policy = defaultdict(float), defaultdict()
         for s in states:
             if mdp.isEnd(s):
@@ -223,13 +228,12 @@ def valueIteration(mdp, f):
             else:
                 newV[s], policy[s] = max((Q(s, action), \
                     action) for action in mdp.actions(s))
+        bestV, bestS =  max((V[s], s) for s in states) 
+        print bestV, bestS, str(policy[bestS])
         if max(abs(newV[s] - V[s]) for s in states) < 1e-5:
             break
         V = newV
         i += 1
-        print 'Iteration ' + str(i) + ' ============================================'
-        bestV, bestS =  max((V[s], s) for s in states) 
-        print bestV, bestS, str(policy[bestS]).split(' ')[2].split('.')[1][1:]
     write_to_file(policy, V, f)
                 
 def profit_estimation(policy, initial_state, info, iters=80):
