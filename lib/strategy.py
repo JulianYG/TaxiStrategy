@@ -4,6 +4,7 @@ Created on Dec 11, 2016
 @author: JulianYGao
 '''
 from utils import *
+import itertools
 
 class TaxiMDP(object):
     '''
@@ -19,7 +20,8 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
-        self.grids = rdd.map(lambda (k, v): k[0]).distinct().collect()
+        self.grids = self._generate_grids(boundaries, grid_factor)
+        self.hotspots = self._sort_hotspots(rdd)
         self.traffic_info = rdd.collectAsMap()
         self.boundaries = boundaries
         
@@ -30,97 +32,90 @@ class TaxiMDP(object):
         return (self.t_start, self.g_start)
 
     def actions(self, state):
-        result = [self._stay]
+
+        loc = ((float(state[0][0][0]), float(state[0][0][1])), 
+            (float(state[0][1][0]), float(state[0][1][1])))
+        lon, lat = loc[0], loc[1]
+
         # Stay in the old grid, driving around
-        lon, lat = (float(state[0][0][0]), float(state[0][0][1])), \
-            (float(state[0][1][0]), float(state[0][1][1]))
+        result = [self._stay(loc)]
 
         # Nine actions in all possible directions or stay
         if (lon[0] - self.grid_scale) > self.boundaries[0]:
-            result.append(self._move_left)
+            result.append(self._move_left(loc))
             if (lat[1] + self.grid_scale) < self.boundaries[3]:
-                result.append(self._move_up_left)
+                result.append(self._move_up_left(loc))
 
         if (lat[0] - self.grid_scale) > self.boundaries[2]:
-            result.append(self._move_down)
+            result.append(self._move_down(loc))
             if (lon[0] - self.grid_scale) > self.boundaries[0]:
-                result.append(self._move_down_left)
+                result.append(self._move_down_left(loc))
 
         if (lat[1] + self.grid_scale) < self.boundaries[3]:
-            result.append(self._move_up)
+            result.append(self._move_up(loc))
             if (lon[1] + self.grid_scale) < self.boundaries[1]:
-                result.append(self._move_up_right)
+                result.append(self._move_up_right(loc))
         
         if (lon[1] + self.grid_scale) < self.boundaries[1]:
-            result.append(self._move_right)
+            result.append(self._move_right(loc))
             if (lat[0] - self.grid_scale) > self.boundaries[2]:
-                result.append(self._move_down_right)
+                result.append(self._move_down_right(loc))
 
-        return result
+        # Don't consider all grids, but some of them... Only return sets of hot spots
+        # Make top k as a parameter
+        return result + self.hotspots[state[1]]
 
     def prob_succ_reward(self, state, action):
         
         result = []
         curr_location = ((float(state[0][0][0]), float(state[0][0][1])), 
             (float(state[0][1][0]), float(state[0][1][1])))
-        target_location = action(curr_location)
+        target_location_str = action
         current_time_hr = get_state_time_hr(state[1])
         
         # Have to make sure initial state is inside RDD
         # Current location and time is not necessarily in RDD. Return 0 in this case
         current_info = self.traffic_info.get((state[0], current_time_hr))
         if current_info:
-            _, _, _, curr_cruise_time, _, curr_pickup_prob, _ = current_info
+            _, _, _, curr_cruise_time, v, pickup_prob, _ = current_info
         else:
-            return [(1, state, 0.0)]   
+            curr_cruise_time, v, pickup_prob = 2.0, 0.18, 0.0
+            # Doesn't really matter since pickup prob should be 0
+
+        ##### Decide to abandon notion of picking someone up in current grid #####
+        
         # Now it takes some time to drive to the target location
-        _, new_time_hr, new_time_str = get_state_time_stamp(state[1], curr_cruise_time)
+        target_location = ((float(target_location_str[0][0]), float(target_location_str[0][1])),
+            (float(target_location_str[1][0]), float(target_location_str[1][1])))
+        
+        passing_grids = path_approximation(curr_location, target_location, self.grid_scale)
+        travel_time = curr_cruise_time
+        for pg in passing_grids:
+            if pg in self.traffic_info:
+                travel_time += self.traffic_info[pg][3]
+            else:
+                travel_time += get_grid_size(pg) / v  
+                # Average time needed to go across one grid
+        
+        travel_time = manhattan_distance(target_location, curr_location) / v
+        _, new_time_hr, new_time_str = get_state_time_stamp(state[1], 
+            curr_cruise_time + travel_time)
+        
         new_empty_state = (target_location, new_time_str)
-            
+        
         data = self.traffic_info.get((target_location, new_time_hr))
         
         if data:
             # Now if this state can be found in RDD
-            # If didn't pickup anyone at the target location
-            # this prob is for not picking anyone currently
-            distance_dist, time_dist, pay_dist, cruise_time, v, \
-                target_pickup_prob, dropoff_prob = data
-            result.append((1 - curr_pickup_prob, new_empty_state, 
-                self._state_reward(curr_cruise_time, distance_dist, 
-                    time_dist, pay_dist, target_pickup_prob)))
+            # If not picking anyone currently
+            distance_dist, time_dist, pay_dist, _, v, \
+                target_pickup_prob, _ = data
+            result.append((1, new_empty_state, self._state_reward(curr_cruise_time \
+                + travel_time, distance_dist, time_dist, pay_dist, target_pickup_prob)))
         else:
             # If is not in the database, then must have not been visited for a long time
             result.append((1, (target_location, new_time_str), 0.0))
-            return result
 
-        # If pickup passenger at current location, consider future from there
-        for dropoff_grid in dropoff_prob:
-            new_location = ((float(dropoff_grid[0][0]), float(dropoff_grid[0][1])), 
-                (float(dropoff_grid[1][0]), float(dropoff_grid[1][1])))
-            if new_location[0][0] > self.boundaries[0] and new_location[0][1] < self.boundaries[1]\
-                and new_location[1][0] > self.boundaries[2] and new_location[1][1] < self.boundaries[3]:
-                
-                # scale distance with 0.9
-                distance = manhattan_distance(new_location, curr_location) * 0.9   
-                running_time = cruise_time + distance / v
-                # Since picked up at new place, spent cruise time there
-                _, new_time_hr, new_time_str = get_state_time_stamp(state[1], running_time)
-
-                new_trans_state = (new_location, new_time_str)
-                dest_data = self.traffic_info.get((new_location, new_time_hr))
-                if dest_data:
-                    dest_dist_dist, dest_time_dist, dest_pay_dist, \
-                        _, _, dest_pickup_prob, _ = dest_data
-                else:
-                    result.append((target_pickup_prob * dropoff_prob[dropoff_grid], 
-                        new_trans_state, 0.0))
-                    continue
-                
-                # Not sure if this is the correct reward formula, when combining two locs
-                result.append((target_pickup_prob * dropoff_prob[dropoff_grid], 
-                    new_trans_state, self._state_reward(running_time, dest_dist_dist, 
-                        dest_time_dist, (dest_pay_dist[0] + pay_dist[0], 
-                            dest_pay_dist[1]), dest_pickup_prob)))
         return result
 
     def discount(self):
@@ -141,6 +136,38 @@ class TaxiMDP(object):
         return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
             (dist_m - dist_std / 2.0)))
         
+    def _sort_hotspots(self, rdd):
+        # Hot spots are the locations that have highest probabilities
+        res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), 
+            (p_m, p_v), c_t, v, p, g)): (hr, (grid, p))).\
+                filter(lambda x: x[1][1] > 0.5).sortBy(lambda x: x[1][1], 
+                    ascending=False).map(lambda x: (x[0], [x[1][0]]))\
+                        .reduceByKey(lambda a, b: a + b)
+        hotspots = res.collectAsMap()
+        for hr in hotspots:
+            sorted_grid_lst = hotspots[hr]
+            # Only consider the top 10 hot spots in the surroundings
+            if len(sorted_grid_lst) < 10:
+                continue
+            hotspots[hr] = sorted_grid_lst[:5] + random.sample(sorted_grid_lst[5:], 5)
+            # Use some randomness to add robustness
+        return hotspots
+
+    def _generate_grids(boundaries):
+        lon0, lon1, lat0, lat1 = boundaries
+        lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, 
+            math.floor(lat0 / self.grid_scale) * self.grid_scale
+        lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, 
+            math.ceil(lat1 / self.grid_scale) * self.grid_scale
+        lon_range = np.arange(lon_lower, lon_higher + self.grid_scale, self.grid_scale)
+        lat_range = np.arange(lat_lower, lat_higher + self.grid_scale, self.grid_scale)
+        lon_tups, lat_tups = [], []
+        for i in range(len(lon_range) - 1):
+            lon_tups.append((str(lon_range[i]), str(lon_range[i + 1])))
+        for j in range(len(lat_range) - 1):
+            lat_tups.append((str(lat_range[j]), str(lat_range[j + 1])))
+        return list(itertools.product(lon_tups, lat_tups))
+       
     def _stay(self, loc):
         return ((str(loc[0][0]), str(loc[0][1])), (str(loc[1][0]), str(loc[1][1])))
 

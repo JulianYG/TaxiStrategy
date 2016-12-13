@@ -49,6 +49,12 @@ def centerize_grid(coords_tuple):
     # ((lon0, lon1), (lat0, lat1)) => (avg lon, avg lat)
     return ((coords_tuple[0][0] + coords_tuple[0][1]) / 2, (coords_tuple[1][0] + coords_tuple[1][1]) / 2)
 
+def get_grid_size(g):
+    # Helper function. Assume Manhattan distance
+    width = haversine(float(g[0][0]), float(g[1][1]), float(g[0][1]), float(g[1][1]))
+    height = haversine(float(g[0][0]), float(g[1][1]), float(g[0][0]), float(g[1][0]))
+    return width + height   # in miles
+
 def manhattan_distance(loc0, loc1):
     (lon0, lat0), (lon1, lat1) = centerize_grid(loc0), centerize_grid(loc1)
     return haversine(lon0, lat0, lon0, lat1) + haversine(lon0, lat1, lon1, lat1)

@@ -79,17 +79,12 @@ def get_pickup_probability(waiting_time, speed, congestion_factor):
     Probability is calculated by sampling from a Poisson distribution, 
     whose parameter lambda is defined by lambda = waiting_time t,
     and sampled by summation of t' < T = grid_size / (v * alpha)
-    """
-    def get_grid_size(g):
-        # Helper function. Assume Manhattan distance
-        width = haversine(float(g[0][0]), float(g[1][1]), float(g[0][1]), float(g[1][1]))
-        height = haversine(float(g[0][0]), float(g[1][1]), float(g[0][0]), float(g[1][0]))
-        return width + height   # in miles
-        
+    """ 
     cruise_time = congestion_factor.map(lambda ((grid, hr), alpha): (hr, (grid, alpha)))\
-        .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), (round(get_grid_size(grid) / (v * alpha)), v)))
+        .join(speed).map(lambda (hr, ((grid, alpha), v)): ((grid, hr), (get_grid_size(grid) / (v * alpha), v)))
     grid_prob_map = cruise_time.join(waiting_time)\
-        .map(lambda ((grid, hr), ((c_t, v), w_t)): ((grid, hr), (c_t, v, poisson_summation(w_t, int(c_t)))))
+        .map(lambda ((grid, hr), ((c_t, v), w_t)): ((grid, hr), (c_t, v, 
+            poisson_summation(w_t, int(round(c_t))))))
     return grid_prob_map
     # (('grid', 'hr'), (cruise_time, v, p))
     

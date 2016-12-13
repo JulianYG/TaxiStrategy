@@ -40,6 +40,10 @@ def time_range(start_time, end_time):
 	for n in range(0, int((end_time - start_time).seconds) + 1, 60):
 		yield start_time + datetime.timedelta(seconds=n)
 
+def path_approximation(depart, dest, grid_scale):
+	path = []
+	return path
+
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
 	Generate taxi data in the form of 
@@ -108,8 +112,8 @@ def process_locations(locs):
 
 	return grid_count_map
 
-def write_to_file(pi, V, file):
-	with open(file, 'w') as csv_file:
+def write_to_file(pi, V, f):
+	with open(f, 'w') as csv_file:
 		writer = csv.writer(csv_file)
 		for state in pi:
 			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
