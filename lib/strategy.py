@@ -4,7 +4,6 @@ Created on Dec 11, 2016
 @author: JulianYGao
 '''
 from utils import *
-import itertools
 
 class TaxiMDP(object):
     '''
@@ -20,7 +19,7 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
-        self.grids = rdd.map(lambda (k, v): k[0]).distinct().collect() #self._generate_grids(boundaries)
+        self.grids = self._generate_grids(rdd)
         self.hotspots = self._sort_hotspots(rdd)
         self.traffic_info = rdd.collectAsMap()
         self.boundaries = boundaries
@@ -157,23 +156,12 @@ class TaxiMDP(object):
             # Use some randomness to add robustness
         return hotspots
 
-    def _generate_grids(self, boundaries):
+    def _generate_grids(self, rdd):
         # Choice 1: Generating the entire grid within the whole range. Not sure
         # if computationally feasible
         # Choice 2: Grabbing the grids which contains data
-        lon0, lon1, lat0, lat1 = boundaries
-        lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, \
-            math.floor(lat0 / self.grid_scale) * self.grid_scale
-        lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, \
-            math.ceil(lat1 / self.grid_scale) * self.grid_scale
-        lon_range = np.arange(lon_lower, lon_higher + self.grid_scale, self.grid_scale)
-        lat_range = np.arange(lat_lower, lat_higher + self.grid_scale, self.grid_scale)
-        lon_tups, lat_tups = [], []
-        for i in range(len(lon_range) - 1):
-            lon_tups.append((str(lon_range[i]), str(lon_range[i + 1])))
-        for j in range(len(lat_range) - 1):
-            lat_tups.append((str(lat_range[j]), str(lat_range[j + 1])))
-        return list(itertools.product(lon_tups, lat_tups))
+        # I use choice 2
+        return rdd.map(lambda (k, v): k[0]).distinct().collect()
        
     def _stay(self, loc):
         return ((str(loc[0][0]), str(loc[0][1])), (str(loc[1][0]), str(loc[1][1])))
@@ -209,9 +197,8 @@ class TaxiMDP(object):
     def _move_down_right(self, loc):
         return ((str(loc[0][0] + self.grid_scale), str(loc[0][1] + self.grid_scale)), \
             (str(loc[1][0] - self.grid_scale), str(loc[1][1] - self.grid_scale)))
-
-
-
+        
+# The MDP value iteration process
 def valueIteration(mdp, f):
     
     V = defaultdict(float)
@@ -220,7 +207,7 @@ def valueIteration(mdp, f):
     def Q(state, action):
         return sum(prob * (reward + mdp.discount() * V[newState]) for prob, 
             newState, reward in mdp.prob_succ_reward(state, action))
-    i = 0
+    i = 1
     while True:
         print 'Iteration ' + str(i) + ' ============================================' 
         newV, policy = defaultdict(float), defaultdict()
@@ -231,12 +218,12 @@ def valueIteration(mdp, f):
             else:
                 newV[s], policy[s] = max((Q(s, action), \
                     action) for action in mdp.actions(s))
-        bestV, bestS = max((V[s], s) for s in states) 
+        bestV, bestS = max((V[s], s) for s in states)
         epsilon = max(abs(newV[s] - V[s]) for s in states)
         print 'Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
              + '\nBest policy: ' + policy[bestS]
-        print epsilon
-        if epsilon < 1e-5:
+        print 'Counted  ' + str(epsilon)
+        if epsilon < 0.01:
             break  
         V = newV
         i += 1

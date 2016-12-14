@@ -40,10 +40,6 @@ def time_range(start_time, end_time):
 	for n in range(0, int((end_time - start_time).seconds) + 1, 60):
 		yield start_time + datetime.timedelta(seconds=n)
 
-def path_approximation(depart, dest, grid_scale):
-	path = []
-	return path
-
 def preprocess_taxi_data(file_name, dayNum, grid_factor, sc):
 	"""
 	Generate taxi data in the form of 
