@@ -158,7 +158,7 @@ class TaxiMDP(object):
             # Use some randomness to add robustness
         return hotspots
 
-    def _generate_grids(self, rdd, boundaries, onfly=1):
+    def _generate_grids(self, rdd, onfly=1):
         # Choice 1: Generating the entire grid within the whole range. Not sure
         # if computationally feasible
         # Choice 2: Grabbing the grids which contains data
