@@ -19,10 +19,10 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
+        self.boundaries = boundaries
         self.grids = self._generate_grids(rdd)
         self.hotspots = self._sort_hotspots(rdd)
         self.traffic_info = rdd.collectAsMap()
-        self.boundaries = boundaries
         
     def isEnd(self, state):
         return get_state_time(state[1]) > self.t_end
@@ -141,9 +141,9 @@ class TaxiMDP(object):
         
     def _sort_hotspots(self, rdd):
         # Hot spots are the locations that have highest probabilities
-        res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), 
-            (p_m, p_v), c_t, v, p, g)): (hr, (grid, p))).\
-                filter(lambda x: x[1][1] > 0.5).sortBy(lambda x: x[1][1], 
+        res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
+            c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5 and \
+                self._boundary_check(x[1][0])).sortBy(lambda x: x[1][1], 
                     ascending=False).map(lambda x: (x[0], [x[1][0]]))\
                         .reduceByKey(lambda a, b: a + b)
         hotspots = res.collectAsMap()
@@ -197,7 +197,12 @@ class TaxiMDP(object):
     def _move_down_right(self, loc):
         return ((str(loc[0][0] + self.grid_scale), str(loc[0][1] + self.grid_scale)), \
             (str(loc[1][0] - self.grid_scale), str(loc[1][1] - self.grid_scale)))
-        
+    
+    def _boundary_check(self, x):
+        return float(x[0][0]) > self.boundaries[0] and float(x[0][1]) < \
+            self.boundaries[1] and float(x[1][0]) > self.boundaries[2] and \
+                float(x[1][1]) < self.boundaries[3]  
+
 # The MDP value iteration process
 def valueIteration(mdp, f):
     
@@ -230,21 +235,6 @@ def valueIteration(mdp, f):
         V = newV
         i += 1
     write_to_file(policy, V, f)
-                
-def profit_estimation(policy, initial_state, info, iters=80):
-    """
-    Note that initial state should match with the input start state
-    for MDP value iteration as well
-    """
-    for _ in iters:
-
-        distance_dist, time_dist, pay_dist, cruise_time, v, target_pickup_prob, \
-            dropoff_prob = info.lookup(initial_state)
-        state = initial_state
-        while True:
-            next_loc = policy[state](state)
-            time_dist = 3
-        
     
     
     
