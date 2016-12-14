@@ -12,12 +12,12 @@ class Simulator(object):
     """
 
     """
-    def __init__(self, db, start_time, available_time, start_loc, grid_factor):
+    def __init__(self, rdd, start_time, available_time, start_loc, grid_factor):
 
-        self.database = db
         self.start_state = (gridify(start_loc[0], start_loc[1], grid_factor), start_time)
         self.end_time = get_state_time_stamp(start_time, available_time)[0]
-        self.hotspots = sort_hotspots(db)
+        self.hotspots = sort_hotspots(rdd)
+        self.database = rdd.collectAsMap()
 
     def profit_estimation(self, policy, iters=20):
         """
@@ -33,17 +33,22 @@ class Simulator(object):
             while get_state_time(curr_state[1]) < self.end_time:
                 print 'location ' + str(i)
                 i += 1
-                distance_dist, time_dist, pay_dist, cruise_time, v, pickup_prob, \
-                    dropoff_map = self.database[(curr_state[0], get_state_time_hr(curr_state[1]))]
-                    
+                info = self.database.get((curr_state[0], 
+                    get_state_time_hr(curr_state[1])), None)
+                if info:
+                    distance_dist, time_dist, pay_dist, cruise_time, v, pickup_prob, \
+                        dropoff_map = info
+                else:
+                    v, pickup_prob = 0.18, 0.0
                 # Now it's time to make the decision
-                pickup = np.random.choice([0, 1], [1 - pickup_prob, pickup_prob]) # p=
+                pickup = np.random.choice([0, 1], p=[1 - pickup_prob, pickup_prob]) # p=
                 if pickup:
                     print 'pickup'
                     # Second, if there is passenger when leaving current location
                     # Just sample a random place from database
-                    dropoff_location = np.random.choice(dropoff_map.keys(), 
-                        p=dropoff_map.values())
+                    location_list, location_prob = zip(*dropoff_map.items())
+                    dropoff_location = location_list[np.random.choice(range(len(location_list)), 
+                        p=location_prob)]
                     travel_distance = manhattan_distance(dropoff_location, curr_state[0])
                     travel_time = cruise_time + travel_distance / v
                     next_state = (dropoff_location,
@@ -57,10 +62,8 @@ class Simulator(object):
                     
                     # What if not in policy? Assume this place definite has no passenger
                     # So driver can just heading to the next state
-
-                    next_non_pickup_loc = policy.get([curr_state], 
+                    next_non_pickup_loc = policy.get(curr_state, 
                         self._eval_hotspots(curr_state))
-                  
                     travel_distance = manhattan_distance(next_non_pickup_loc, curr_state[0])
                     travel_time = cruise_time +  travel_distance / v
                     next_state = (next_non_pickup_loc, 
@@ -70,11 +73,11 @@ class Simulator(object):
 
                 # Move on to that state
                 curr_state = bundle[2]
-                print curr_state[1]
                 total_profit += bundle[0]
                 total_dist += bundle[1]
                 path_info['path'].append((curr_state[0], bundle[0], bundle[1]))
             path_info['profit'] = (total_profit, total_dist)
+            print total_profit, total_dist
             simulated_paths.append(path_info)
         return simulated_paths
 
