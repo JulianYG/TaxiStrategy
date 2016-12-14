@@ -77,34 +77,19 @@ class TaxiMDP(object):
         # Current location and time is not necessarily in RDD. Return 0 in this case
         current_info = self.traffic_info.get((state[0], current_time_hr))
         if current_info:
-            _, _, _, curr_cruise_time, v, _, _ = current_info
+            _, _, _, curr_cruise_time, v, curr_pickup_prob, dropoff_info = current_info
         else:
-            curr_cruise_time, v = 2.0, 0.18
             # Doesn't really matter since pickup prob should be 0
-
-        ##### Decide to abandon notion of picking someone up in current grid #####
-        
+            curr_cruise_time, v, curr_pickup_prob, dropoff_info = 2.0, 0.18, 0.0, None
+            
         # Now it takes some time to drive to the target location
         target_location = ((float(target_location_str[0][0]), float(target_location_str[0][1])),
-            (float(target_location_str[1][0]), float(target_location_str[1][1])))
-        travel_time = curr_cruise_time
-        
-        # This is more accurate, but too slow for Brehensam's algorithm
-        # passing_grids = path_approximation(curr_location, target_location, self.grid_scale)
-
-        # for pg in passing_grids:
-        #     if pg in self.traffic_info:
-        #         travel_time += self.traffic_info[pg][3]
-        #     else:
-        #         travel_time += get_grid_size(pg) / v  
-        #         # Average time needed to go across one grid
-        
-        travel_time += manhattan_distance(target_location, curr_location) / v
+            (float(target_location_str[1][0]), float(target_location_str[1][1])))   
+        travel_time = curr_cruise_time + manhattan_distance(target_location, curr_location) / v
         _, new_time_hr, new_time_str = get_state_time_stamp(state[1], travel_time)
         new_empty_state = (target_location_str, new_time_str)
         
         data = self.traffic_info.get((target_location_str, new_time_hr))
-        
         if data:
             # Now if this state can be found in RDD
             # If not picking anyone currently
@@ -112,11 +97,29 @@ class TaxiMDP(object):
                 target_pickup_prob, _ = data
             reward = self._state_reward(travel_time, distance_dist, time_dist, 
                 pay_dist, target_pickup_prob)
-            result.append((1, new_empty_state, reward))
+            result.append((1 - curr_pickup_prob, new_empty_state, reward))
         else:
             # If is not in the database, then must have not been visited for a long time
-            result.append((1, new_empty_state, 0.0))
+            result.append((1 - curr_pickup_prob, new_empty_state, 0.0))
 
+        # Needs to consider probability of picking up someone here.
+        if dropoff_info:
+            for dropoff_location in dropoff_info:
+                dropoff_probability = dropoff_info[dropoff_location]
+                trip_time = curr_cruise_time + manhattan_distance(((float(dropoff_location[0][0]), 
+                    float(dropoff_location[0][1])), (float(dropoff_location[1][1]), 
+                        float(dropoff_location[1][1]))), curr_location) / v
+                _, dest_time_hr, dest_time_str = get_state_time_stamp(state[1], trip_time)
+                new_full_state = (dropoff_location, dest_time_str)
+                dest_info = self.traffic_info.get((dropoff_location, dest_time_hr))    
+                if not dest_info:
+                    new_reward = 0.0
+                else:
+                    dest_distance_dist, dest_time_dist, dest_pay_dist, _, _, dest_pickup_prob, _ = dest_info
+                    new_reward = self._state_reward(trip_time, dest_distance_dist, 
+                        dest_time_dist, dest_pay_dist, dest_pickup_prob)
+                result.append((curr_pickup_prob * dropoff_probability, new_full_state, new_reward))
+                
         return result
 
     def discount(self):
@@ -228,10 +231,13 @@ def valueIteration(mdp, f):
             else:
                 newV[s], policy[s] = max((Q(s, action), \
                     action) for action in mdp.actions(s))
-        bestV, bestS =  max((V[s], s) for s in states) 
-        print bestV, bestS, str(policy[bestS])
-        if max(abs(newV[s] - V[s]) for s in states) < 1e-5:
-            break
+        bestV, bestS = max((V[s], s) for s in states) 
+        epsilon = max(abs(newV[s] - V[s]) for s in states)
+        print 'Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
+             + '\nBest policy: ' + policy[bestS]
+        print epsilon
+        if epsilon < 1e-5:
+            break  
         V = newV
         i += 1
     write_to_file(policy, V, f)

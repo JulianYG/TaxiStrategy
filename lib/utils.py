@@ -140,7 +140,8 @@ def read_params(sc, p):
 		for item in item_list:
 			tup = item.split(':')
 			coords = tup[0].split('~')
-			map_dist[((coords[0], coords[1]), (coords[2], coords[3]))] = float(tup[1])
+			map_dist[((str(coords[0]), str(coords[1])), (str(coords[2]), 
+				str(coords[3])))] = float(tup[1])
 		return map_dist
 	
 	params = sc.textFile(p).map(lambda x: x.split(','))\
