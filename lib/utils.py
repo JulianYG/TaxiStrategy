@@ -108,6 +108,27 @@ def process_locations(locs):
 
 	return grid_count_map
 
+def get_state_reward(time, (dist_m, dist_std), (time_m, time_std), 
+    (pay_m, pay_std), prob):
+    return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
+        (dist_m - dist_std / 2.0)))
+
+def sort_hotspots(rdd):
+    # Hot spots are the locations that have highest probabilities
+    res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
+        c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5)\
+            .sortBy(lambda x: x[1][1], ascending=False).map(lambda x: \
+                (x[0], [x[1][0]])).reduceByKey(lambda a, b: a + b)
+    hotspots = res.collectAsMap()
+    for hr in hotspots:
+        sorted_grid_lst = hotspots[hr]
+        # Only consider the top 10 hot spots in the surroundings
+        if len(sorted_grid_lst) < 10:
+            continue
+        hotspots[hr] = sorted_grid_lst[:5] + random.sample(sorted_grid_lst[5:], 5)
+        # Use some randomness to add robustness
+    return hotspots
+
 def write_to_file(pi, V, f):
 	with open(f, 'w') as csv_file:
 		writer = csv.writer(csv_file)

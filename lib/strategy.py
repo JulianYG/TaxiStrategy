@@ -26,7 +26,7 @@ class TaxiMDP(object):
         # keep that in mind!
         self.boundaries = boundaries
         self.grids = self._generate_grids(rdd)
-        self.hotspots = self._sort_hotspots(rdd)
+        self.hotspots = sort_hotspots(rdd)
         self.traffic_info = rdd.collectAsMap()
         
     def isEnd(self, state):
@@ -99,7 +99,7 @@ class TaxiMDP(object):
             # If not picking anyone currently
             distance_dist, time_dist, pay_dist, _, v, \
                 target_pickup_prob, _ = data
-            reward = self._state_reward(travel_time, distance_dist, time_dist, 
+            reward = get_state_reward(travel_time, distance_dist, time_dist, 
                 pay_dist, target_pickup_prob)
             result.append((1 - curr_pickup_prob, new_empty_state, reward))
         else:
@@ -118,7 +118,7 @@ class TaxiMDP(object):
                     new_reward = 0.0
                 else:
                     dest_distance_dist, dest_time_dist, dest_pay_dist, _, _, dest_pickup_prob, _ = dest_info
-                    new_reward = self._state_reward(trip_time, dest_distance_dist, 
+                    new_reward = get_state_reward(trip_time, dest_distance_dist, 
                         dest_time_dist, dest_pay_dist, dest_pickup_prob)
                 result.append((curr_pickup_prob * dropoff_probability, new_full_state, new_reward))
                 
@@ -136,27 +136,6 @@ class TaxiMDP(object):
         for g in self.grids:
             state += zip([g] * len(time), time)
         return state
-    
-    def _state_reward(self, time, (dist_m, dist_std), (time_m, time_std), 
-        (pay_m, pay_std), prob):
-        return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
-            (dist_m - dist_std / 2.0)))
-        
-    def _sort_hotspots(self, rdd):
-        # Hot spots are the locations that have highest probabilities
-        res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
-            c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5)\
-                .sortBy(lambda x: x[1][1], ascending=False).map(lambda x: \
-                    (x[0], [x[1][0]])).reduceByKey(lambda a, b: a + b)
-        hotspots = res.collectAsMap()
-        for hr in hotspots:
-            sorted_grid_lst = hotspots[hr]
-            # Only consider the top 10 hot spots in the surroundings
-            if len(sorted_grid_lst) < 10:
-                continue
-            hotspots[hr] = sorted_grid_lst[:5] + random.sample(sorted_grid_lst[5:], 5)
-            # Use some randomness to add robustness
-        return hotspots
 
     def _generate_grids(self, rdd, onfly=1):
         # Choice 1: Generating the entire grid within the whole range. Not sure
@@ -235,7 +214,9 @@ def valueIteration(mdp, f):
             newState, reward in mdp.prob_succ_reward(state, action))
     i = 0
     while True:
-        iter_log.write('Iteration ' + str(i) + '\n') 
+        title = 'Iteration ' + str(i) + '\n'
+        print title
+        iter_log.write(title) 
         newV, policy = defaultdict(float), defaultdict()
         for s in states:
             if mdp.isEnd(s):
@@ -248,7 +229,9 @@ def valueIteration(mdp, f):
         epsilon = max(abs(newV[s] - V[s]) for s in states)
         iter_log.write('Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
              + '\nBest policy: ' + str(policy[bestS]) + '\n')
-        iter_log.write(str(epsilon) + '\n')
+        error_margin = str(epsilon) + '\n'
+        print error_margin
+        iter_log.write(error_margin)
         if epsilon < 1e-5:
             iter_log.close()
             break

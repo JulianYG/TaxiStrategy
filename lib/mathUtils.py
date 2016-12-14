@@ -6,6 +6,7 @@ Created on Dec 3, 2016
 import math
 import numpy as np
 import random
+import itertools
 
 def poisson_summation(lam, t):
     s = 0.0
