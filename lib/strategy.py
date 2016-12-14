@@ -145,10 +145,9 @@ class TaxiMDP(object):
     def _sort_hotspots(self, rdd):
         # Hot spots are the locations that have highest probabilities
         res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
-            c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5 and \
-                self._boundary_check(x[1][0])).sortBy(lambda x: x[1][1], 
-                    ascending=False).map(lambda x: (x[0], [x[1][0]]))\
-                        .reduceByKey(lambda a, b: a + b)
+            c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5)\
+                .sortBy(lambda x: x[1][1], ascending=False).map(lambda x: \
+                    (x[0], [x[1][0]])).reduceByKey(lambda a, b: a + b)
         hotspots = res.collectAsMap()
         for hr in hotspots:
             sorted_grid_lst = hotspots[hr]
@@ -159,12 +158,30 @@ class TaxiMDP(object):
             # Use some randomness to add robustness
         return hotspots
 
-    def _generate_grids(self, rdd):
+    def _generate_grids(self, rdd, boundaries, onfly=1):
         # Choice 1: Generating the entire grid within the whole range. Not sure
         # if computationally feasible
         # Choice 2: Grabbing the grids which contains data
-        # I use choice 2
-        return rdd.map(lambda (k, v): k[0]).distinct().collect()
+        # I use choice 2: Instead of generating wasted states beforehand, use 
+        # the same evaluation method on-fly during planning phase
+        if onfly:
+            # Only return grids within boundaries
+            return rdd.map(lambda (k, v): k[0]).filter(self._boundary_check)\
+                .distinct().collect()
+        else:
+            lon0, lon1, lat0, lat1 = self.boundaries
+            lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, \
+                math.floor(lat0 / self.grid_scale) * self.grid_scale
+            lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, \
+                math.ceil(lat1 / self.grid_scale) * self.grid_scale
+            lon_range = np.arange(lon_lower, lon_higher + self.grid_scale, self.grid_scale)
+            lat_range = np.arange(lat_lower, lat_higher + self.grid_scale, self.grid_scale)
+            lon_tups, lat_tups = [], []
+            for i in range(len(lon_range) - 1):
+                lon_tups.append((str(lon_range[i]), str(lon_range[i + 1])))
+            for j in range(len(lat_range) - 1):
+                lat_tups.append((str(lat_range[j]), str(lat_range[j + 1])))
+            return list(itertools.product(lon_tups, lat_tups))
        
     def _stay(self, loc):
         return ((str(loc[0][0]), str(loc[0][1])), (str(loc[1][0]), str(loc[1][1])))
