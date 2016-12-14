@@ -26,10 +26,10 @@ def plot_probability_map():
     with open('params/probmap', 'r') as data:
         reader = csv.reader(data, delimiter=',')
         for row in reader:
-            lat0 = float(row[2].replace("'", ""))
-            lat1 = float(row[3].replace("'", ""))
-            lon0 = float(row[0].replace("'", ""))
-            lon1 = float(row[1].replace("'", ""))
+            lat0 = row[2].replace("'", "")
+            lat1 = row[3].replace("'", "")
+            lon0 = row[0].replace("'", "")
+            lon1 = row[1].replace("'", "")
             weight = float(row[-1].replace("'", ""))
             time = int(row[4].replace("'", ""))
             dot = centerize_grid(((lon0, lon1), (lat0, lat1)))
@@ -51,8 +51,7 @@ def plot_dropoff_distribution():
     with open('params/dropmap', 'r') as data:
         reader = csv.reader(data, delimiter=',')
         for row in reader:
-            dot = centerize_grid(((float(row[0]), float(row[1])), 
-                (float(row[2]), float(row[3]))))
+            dot = centerize_grid(((row[0], row[1]), (row[2], row[3])))
             locs = row[5].split(' ')
             for loc in locs:
                 coords = loc.split(':')
