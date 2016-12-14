@@ -64,5 +64,12 @@ def manhattan_distance(loc0, loc1):
     return haversine(float(lon0), float(lat0), float(lon0), 
         float(lat1)) + haversine(float(lon0), float(lat1), float(lon1), float(lat1))
 
-
-
+def fare_estimation((dist_m ,dist_s), (pay_m, pay_s), dist):
+    # Geary-Hinkley transformation
+    # Assume correlation rou is 0.9
+    # return (dist_m * dist - pay_m) / math.sqrt(dist_s**2 * \
+    #     dist**2 - 2 * 0.9 * dist_s * pay_s * dist + pay_s**2) 
+    amount = -1
+    while amount <= 0:
+        amount = dist * (pay_m / dist_m) - pay_s / dist_s * random.uniform(0, dist_s * pay_s)
+    return amount

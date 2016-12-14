@@ -19,6 +19,11 @@ class TaxiMDP(object):
         self.g_start = start_grid
         self.gamma = discount
         self.grid_scale = 0.00111 * grid_factor
+
+        # If you narrow down the map range by too much, there may be no 
+        # places the driver can go. (When all hotspots are out of boundaries, 
+        # and neighbors unknown, it will just randomly wander to infertile neighbors).
+        # keep that in mind!
         self.boundaries = boundaries
         self.grids = self._generate_grids(rdd)
         self.hotspots = self._sort_hotspots(rdd)
@@ -69,7 +74,7 @@ class TaxiMDP(object):
         result = []
         curr_location = ((float(state[0][0][0]), float(state[0][0][1])), 
             (float(state[0][1][0]), float(state[0][1][1])))
-        target_location_str = action
+        target_location = action
         current_time_hr = get_state_time_hr(state[1])
         
         # Have to make sure initial state is inside RDD
@@ -81,14 +86,14 @@ class TaxiMDP(object):
             # Doesn't really matter since pickup prob should be 0
             curr_cruise_time, v, curr_pickup_prob, dropoff_info = 2.0, 0.18, 0.0, None
             
-        # Now it takes some time to drive to the target location
-        target_location = ((float(target_location_str[0][0]), float(target_location_str[0][1])),
-            (float(target_location_str[1][0]), float(target_location_str[1][1])))   
+        # Now it takes some time to drive to the target location  
+        # This part can be improved by Brehensam's algorithm, if 
+        # want to be more accurate on travel time
         travel_time = curr_cruise_time + manhattan_distance(target_location, curr_location) / v
         _, new_time_hr, new_time_str = get_state_time_stamp(state[1], travel_time)
-        new_empty_state = (target_location_str, new_time_str)
+        new_empty_state = (target_location, new_time_str)
         
-        data = self.traffic_info.get((target_location_str, new_time_hr))
+        data = self.traffic_info.get((target_location, new_time_hr))
         if data:
             # Now if this state can be found in RDD
             # If not picking anyone currently
@@ -105,9 +110,7 @@ class TaxiMDP(object):
         if dropoff_info:
             for dropoff_location in dropoff_info:
                 dropoff_probability = dropoff_info[dropoff_location]
-                trip_time = curr_cruise_time + manhattan_distance(((float(dropoff_location[0][0]), 
-                    float(dropoff_location[0][1])), (float(dropoff_location[1][1]), 
-                        float(dropoff_location[1][1]))), curr_location) / v
+                trip_time = curr_cruise_time + manhattan_distance(dropoff_location, curr_location) / v
                 _, dest_time_hr, dest_time_str = get_state_time_stamp(state[1], trip_time)
                 new_full_state = (dropoff_location, dest_time_str)
                 dest_info = self.traffic_info.get((dropoff_location, dest_time_hr))    
@@ -227,7 +230,7 @@ def valueIteration(mdp, f):
         bestV, bestS = max((V[s], s) for s in states)
         epsilon = max(abs(newV[s] - V[s]) for s in states)
         iter_log.write('Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
-             + '\nBest policy: ' + policy[bestS] + '\n')
+             + '\nBest policy: ' + str(policy[bestS]) + '\n')
         iter_log.write(str(epsilon) + '\n')
         if epsilon < 1e-5:
             iter_log.close()

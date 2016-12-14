@@ -146,3 +146,12 @@ def read_params(sc, p):
 				float(x[13]), string_to_counter(x[14]))))
 	return params
 
+def read_policy(p):
+	policy_dict = defaultdict(tuple)
+	with open(p, 'r') as policy:
+		reader = csv.reader(policy)
+		for row in reader:
+			policy_dict[(((str(row[0]), str(row[1])), (str(row[2]), str(row[3]))), 
+				str(row[4]))] = ((str(row[6]), str(row[7])), (str(row[8]), str(row[9])))
+	return policy_dict
+
