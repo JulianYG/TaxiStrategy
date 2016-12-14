@@ -1,6 +1,4 @@
 from optparse import OptionParser
-from oracle import oracle_test
-from baseline import base_test
 from lib.utils import *
 from lib.extractor import *
 from lib.simulator import *
@@ -74,7 +72,7 @@ if __name__ == '__main__':
 	from pyspark import SparkContext, SparkConf
 	arg = read_command(sys.argv[1:])
 	conf = SparkConf().setAppName('taxi')
-	sc = SparkContext('local[4]', '', conf=conf)
+	sc = SparkContext(conf=conf)
 	execute(sc, **arg)
 	sc.stop()
 

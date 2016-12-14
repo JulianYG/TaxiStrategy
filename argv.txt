@@ -1,1 +1,2 @@
--x data/2016_03_x.csv -y data/full_y.csv -l 1 -o weights/15_mon_baseline_model -r predictions/ -p 0 -e 2 -b data/y.train -a  data/2015_01_2016_06_baseline_feats -t forest
+-x data/tiny.csv -d 1 -g 4 -p smpt
+-x data/2016_03_x.csv -g 4 -o param
