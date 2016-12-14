@@ -9,7 +9,7 @@ from lib.strategy import *
 """
 The execution script of NYC taxi data -> DJIA prediction
 """
-def execute(sc, m, x, p, o, d, r, g):
+def execute(sc, x, p, o, d, r, g):
 	"""
 	Execute the command line inputs
 	"""
@@ -59,7 +59,6 @@ def read_command(argv):
 		by big data analysis and mining. Given current taxi location and time, generate lucrative\
 		passenger hunting strategy")
 
-	argv.add_option('-m', type=int, help="Mode selection: Baseline 0, Oracle 1", default=2)
 	argv.add_option('-x', type=str, help="Input training taxi data")
 	argv.add_option('-p', type=str, help="Input parameter file path")
 	argv.add_option('-o', type=str, help="Output parameter file path")
@@ -68,7 +67,7 @@ def read_command(argv):
 	argv.add_option('-g', type=float, help="Grid factor", default = 3)
 	
 	arg, _ = argv.parse_args()
-	return {'m': arg.m, 'x': arg.x, 'p': arg.p, 'o': arg.o,
+	return {'x': arg.x, 'p': arg.p, 'o': arg.o,
 		'd': arg.d, 'r': arg.r, 'g': arg.g}
 
 if __name__ == '__main__':
@@ -78,3 +77,4 @@ if __name__ == '__main__':
 	sc = SparkContext('local[4]', '', conf=conf)
 	execute(sc, **arg)
 	sc.stop()
+
