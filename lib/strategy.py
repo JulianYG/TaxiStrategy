@@ -203,13 +203,14 @@ def valueIteration(mdp, f):
     
     V = defaultdict(float)
     states = mdp.states()
+    iter_log = open(f + '_log', 'w')
 
     def Q(state, action):
         return sum(prob * (reward + mdp.discount() * V[newState]) for prob, 
             newState, reward in mdp.prob_succ_reward(state, action))
-    i = 1
+    i = 0
     while True:
-        print 'Iteration ' + str(i) + ' ============================================' 
+        iter_log.write('Iteration ' + str(i) + '\n') 
         newV, policy = defaultdict(float), defaultdict()
         for s in states:
             if mdp.isEnd(s):
@@ -220,11 +221,12 @@ def valueIteration(mdp, f):
                     action) for action in mdp.actions(s))
         bestV, bestS = max((V[s], s) for s in states)
         epsilon = max(abs(newV[s] - V[s]) for s in states)
-        print 'Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
-             + '\nBest policy: ' + policy[bestS]
-        print 'Counted  ' + str(epsilon)
-        if epsilon < 0.01:
-            break  
+        iter_log.write('Maximum utility: ' + str(bestV) + '\nState of maxQ: ' + str(bestS)\
+             + '\nBest policy: ' + policy[bestS] + '\n')
+        iter_log.write(str(epsilon) + '\n')
+        if epsilon < 1e-5:
+            iter_log.close()
+            break
         V = newV
         i += 1
     write_to_file(policy, V, f)

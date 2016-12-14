@@ -96,6 +96,20 @@ def read_count_map(name):
             countMap['pay'][key] = pay_cnt
     return countMap
 
+def plot_learning_curve(filename):
+    x, y = [], []
+    with open(filename, 'r') as data:
+        reader = csv.reader(data, delimiter=' ')
+        for row in reader:
+            if len(row) == 2:
+                x.append(row[1])
+            if len(row) == 1:
+                y.append(row[0])
+    trace = go.Scatter(x=x, y=y, mode='lines+markers')
+    data = [trace]
+    py.iplot(data, filename='learning_curve')
+
+
 cmap = read_count_map('params/countmap')
 dist_to_plot = cmap['dist']
 grid_hr_key = random.choice(dist_to_plot.keys())
