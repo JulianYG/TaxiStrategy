@@ -34,15 +34,15 @@ def dp_oracle(states, initial_state, rdd):
 	# Baseline 
 	opt_cache = defaultdict(float)
 
-	# Only use this when rdd is small
+	# Only use this when rdd is small!
 	dic_store = rdd.collectAsMap()
+
 	# Recursive case: Look up all previous states
 	# Transition function: max(Q(initial_state), Q(prev_state) + R(prev, curr))
 	for s in states:
 		# s_info = rdd.lookup(s)
 		s_info = dic_store.get(s, None)
 		if s_info: 
-			print 'y'
 			prev_states = [m for m in s_info if m[1] != initial_state]
 			# Choose the max s_util as well
 			s_util, s_prev = max(prev_states)
