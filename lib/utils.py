@@ -30,6 +30,9 @@ def get_state_time_hr(time_str):
 def get_state_time(time_str):
 	return datetime.datetime.strptime(time_str, sfmt)
 
+def get_state_datetime(time_str):
+	return datetime.datetime.strptime(time_str, fmt).strftime(sfmt)
+
 def get_state_time_stamp(time_str, tdelta):
 	old_state_time = datetime.datetime.strptime(time_str, sfmt)
 	new_state_time = old_state_time + datetime.timedelta(seconds=int(tdelta * 60))
