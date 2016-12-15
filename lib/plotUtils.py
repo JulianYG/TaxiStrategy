@@ -1,9 +1,11 @@
 from collections import defaultdict as ddict
 import gmaps
+import gmplot
 import plotly.plotly as py
 import plotly.graph_objs as go
 from utils import *
 import random
+from colour import Color
 
 gmaps.configure(api_key="AIzaSyCB9rVMgEbTcYaQhnbM6jBzLjFLXLaGJZ8")
  
@@ -108,9 +110,23 @@ def plot_learning_curve(filename):
     data = [trace]
     py.iplot(data, filename='learning_curve')
 
+
 def path_visualization(filename):
     path = read_path(filename)
-    pass
+    for route in path:
+        plot_route([(centerize_grid(l[0]), l[1], 
+            "%.2f" % l[2]) for l in route['loc']], '%.2f' % route['profit'])
+
+def plot_route(locations, title):
+    gmap = gmplot.GoogleMapPlotter(40.7530427, -73.9372376, 11.22)
+    gmap.grid(40.616669, 40.886116, 0.00444, -74.021611, -73.742833, 0.00444)
+    n = len(locations)
+    c = list(Color('red').range_to(Color('blue'), n))
+    for i in range(n):
+        l = locations[i]
+        # print l, str(c[i].get_hex_l())[1:], 'Point %s: %s, earned %s' % (str(i), l[1], l[2])
+        gmap.marker(l[0][1], l[0][0], title='Point %s: %s, earned %s' % (i, l[1], l[2]))
+    gmap.draw(title + '.html')
 
 cmap = read_count_map('params/countmap')
 dist_to_plot = cmap['dist']
