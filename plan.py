@@ -3,21 +3,32 @@ from lib.simulator import Simulator
 from lib.utils import *
 from policy import *
 
-def run(sc, d, i, o, t, p, g, m):
+def run(sc, d, i, o, t, p, g, m, f):
 
 	db = read_params(sc, d)
 	route_planner = Simulator(db, t, 80, g)
+
+	# Let's start from Empire State building (as home address)
+	home_location = (-73.985664, 40.748441)
 
 	if not m:
 		pi = read_policy(p)
 	elif m == 1:
 		pi = generate_random_policy(route_planner.get_states(), g)
 	elif m == 2:
-		pi = generate_oracle_policy()
+		# Use 0, assuming Mondays
+		full_trip_info = preprocess_taxi_data(f, 0, g, sc)\
+			.map(lambda (k, v): ((v[3], get_state_time_stamp(k[0], v[1])[2]), 
+				(v[4]**2 / (v[1] * v[2]), (k[1], get_state_time(k[0])))))
+			# map to a ratio: profit^2 / (time * dist) to maximize utility
+			# also keep track of (dropoff loc, dropoff time) state
+			# Note this is mapped in the reversed way to get info easier
+			# key is dropoff state, so we can get the previous state as 
+			# needed in DP alg
+		pi = generate_oracle_policy(route_planner.get_states(), home_location, 
+			full_trip_info)
 
-	# Let's start from Empire State building
-	routes = route_planner.profit_estimation(pi, 
-		(-73.985664, 40.748441), iters=i)
+	routes = route_planner.profit_estimation(pi, home_location, iters=i)
 	# print plan
 	write_path(routes, o)
 
@@ -36,10 +47,12 @@ def parse_command(argv):
 	argv.add_option('-g', type=float, help="Grid factor", default=4)
 	argv.add_option('-m', type=int, help="Running mode: 0 for reading policy file, \
 		1 for baseline, 2 for oracle", default=0)
+	argv.add_option('-f', type=str, help="The original raw csv file that contains \
+		all trip info")
 	
 	arg, _ = argv.parse_args()
 	return {'d': arg.d, 'i': arg.i, 'o': arg.o, 'm': arg.m, 
-		't': arg.t, 'p': arg.p, 'g': arg.g}
+		't': arg.t, 'p': arg.p, 'g': arg.g, 'f': arg.f}
 
 if __name__ == '__main__':
 	from pyspark import SparkContext, SparkConf
@@ -48,3 +61,6 @@ if __name__ == '__main__':
 	sc = SparkContext(conf=conf)
 	run(sc, **arg)
 	sc.stop()
+
+
+
