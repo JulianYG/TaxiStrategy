@@ -16,10 +16,11 @@ def run(sc, d, i, o, t, p, g, m, f):
 	elif m == 1:
 		pi = generate_random_policy(route_planner.get_states(), g)
 	elif m == 2:
-		# Use 0, assuming Mondays
-		full_trip_info = preprocess_taxi_data(f, 0, g, sc)\
-			.map(lambda (k, v): ((v[3], get_state_time_stamp(k[0], v[1])[2]), 
-				(v[4]**2 / (v[1] * v[2]), (k[1], get_state_time(k[0])))))
+		# Use 0, assuming Tuesdays
+		full_trip_info = preprocess_taxi_data(f, 1, g, sc)\
+			.map(lambda (k, v): ((v[3], get_state_time_stamp(get_state_datetime(k[0]), v[1])[2]), 
+				[(v[4]**2 / (v[1] * v[2]), (k[1], get_state_datetime(k[0])))]))\
+					.reduceByKey(lambda a, b: a + b)
 			# map to a ratio: profit^2 / (time * dist) to maximize utility
 			# also keep track of (dropoff loc, dropoff time) state
 			# Note this is mapped in the reversed way to get info easier
