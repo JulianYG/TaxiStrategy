@@ -1,6 +1,6 @@
 from collections import defaultdict as ddict
 import gmaps
-import gmplot
+import gmplotlib
 import plotly.plotly as py
 import plotly.graph_objs as go
 from utils import *
@@ -118,14 +118,14 @@ def path_visualization(filename):
             "%.2f" % l[2]) for l in route['loc']], '%.2f' % route['profit'])
 
 def plot_route(locations, title):
-    gmap = gmplot.GoogleMapPlotter(40.7530427, -73.9372376, 11.22)
+    gmap = gmplotlib.GoogleMapPlotter(40.7530427, -73.9372376, 11.22)
     gmap.grid(40.616669, 40.886116, 0.00444, -74.021611, -73.742833, 0.00444)
     n = len(locations)
-    c = list(Color('red').range_to(Color('blue'), n))
+    c = list(Color('cornsilk').range_to(Color('darkred'), n))
     for i in range(n):
         l = locations[i]
-        # print l, str(c[i].get_hex_l())[1:], 'Point %s: %s, earned %s' % (str(i), l[1], l[2])
-        gmap.marker(l[0][1], l[0][0], title='Point %s: %s, earned %s' % (i, l[1], l[2]))
+        gmap.marker(l[0][1], l[0][0], c=int(c[i].get_hex_l()[1:], 16), 
+            title=(str(i), 'Earned %s at %s' % (l[2], l[1])))
     gmap.draw(title + '.html')
 
 cmap = read_count_map('params/countmap')
@@ -147,4 +147,4 @@ print grid_hr_key, len(money_to_plot[grid_hr_key]), 'pay'
 # print catogery_to_plot[grid_hr_key]
 plot_histogram(money_to_plot[grid_hr_key])
 
-
+path_visualization('results/baseline_route')

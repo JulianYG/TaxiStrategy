@@ -1,7 +1,12 @@
 from lib.utils import *
 
+def generate_oracle_policy(rdd):
+	"""
+	A dynamic programming process that finds the maximum 
+	chain of profit 
+	"""
+	
 
-def generate_oracle_policy():
 	return
 
 def generate_random_policy(states, grid_factor):
