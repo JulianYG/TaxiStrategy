@@ -148,19 +148,7 @@ class TaxiMDP(object):
             return rdd.map(lambda (k, v): k[0]).filter(self._boundary_check)\
                 .distinct().collect()
         else:
-            lon0, lon1, lat0, lat1 = self.boundaries
-            lon_lower, lat_lower = math.floor(lon0 / self.grid_scale ) * self.grid_scale, \
-                math.floor(lat0 / self.grid_scale) * self.grid_scale
-            lon_higher, lat_higher = math.ceil(lon1 / self.grid_scale ) * self.grid_scale, \
-                math.ceil(lat1 / self.grid_scale) * self.grid_scale
-            lon_range = np.arange(lon_lower, lon_higher + self.grid_scale, self.grid_scale)
-            lat_range = np.arange(lat_lower, lat_higher + self.grid_scale, self.grid_scale)
-            lon_tups, lat_tups = [], []
-            for i in range(len(lon_range) - 1):
-                lon_tups.append((str(lon_range[i]), str(lon_range[i + 1])))
-            for j in range(len(lat_range) - 1):
-                lat_tups.append((str(lat_range[j]), str(lat_range[j + 1])))
-            return list(itertools.product(lon_tups, lat_tups))
+            return enumerate_grids(self.boundaries, self.grid_scale)
        
     def _stay(self, loc):
         return ((str(loc[0][0]), str(loc[0][1])), (str(loc[1][0]), str(loc[1][1])))

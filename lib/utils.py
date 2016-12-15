@@ -108,26 +108,39 @@ def process_locations(locs):
 
 	return grid_count_map
 
+def enumerate_grids(boundary, grid_scale):
+	lon0, lon1, lat0, lat1 = boundary
+	lon_lower, lat_lower = math.floor(lon0 / grid_scale) * grid_scale, math.floor(lat0 / grid_scale) * grid_scale
+	lon_higher, lat_higher = math.ceil(lon1 / grid_scale) * grid_scale, math.ceil(lat1 / grid_scale) * grid_scale
+	lon_range = np.arange(lon_lower, lon_higher + grid_scale, grid_scale)
+	lat_range = np.arange(lat_lower, lat_higher + grid_scale, grid_scale)
+	lon_tups, lat_tups = [], []
+	for i in range(len(lon_range) - 1):
+		lon_tups.append((str(lon_range[i]), str(lon_range[i + 1])))
+	for j in range(len(lat_range) - 1):
+		lat_tups.append((str(lat_range[j]), str(lat_range[j + 1])))
+	return list(itertools.product(lon_tups, lat_tups))
+
 def get_state_reward(time, (dist_m, dist_std), (time_m, time_std), 
     (pay_m, pay_std), prob):
-    return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
+	return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
         (dist_m - dist_std / 2.0)))
 
 def sort_hotspots(rdd):
-    # Hot spots are the locations that have highest probabilities
-    res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
+	# Hot spots are the locations that have highest probabilities
+	res = rdd.map(lambda ((grid, hr), ((d_m, d_v), (t_m, t_v), (p_m, p_v), 
         c_t, v, p, g)): (hr, (grid, p))).filter(lambda x: x[1][1] > 0.5)\
             .sortBy(lambda x: x[1][1], ascending=False).map(lambda x: \
                 (x[0], [x[1][0]])).reduceByKey(lambda a, b: a + b)
-    hotspots = res.collectAsMap()
-    for hr in hotspots:
-        sorted_grid_lst = hotspots[hr]
-        # Only consider the top 10 hot spots in the surroundings
-        if len(sorted_grid_lst) < 10:
-            continue
-        hotspots[hr] = sorted_grid_lst[:5] + random.sample(sorted_grid_lst[5:], 5)
-        # Use some randomness to add robustness
-    return hotspots
+	hotspots = res.collectAsMap()
+	for hr in hotspots:
+		sorted_grid_lst = hotspots[hr]
+		# Only consider the top 10 hot spots in the surroundings
+		if len(sorted_grid_lst) < 10:
+			continue
+		hotspots[hr] = sorted_grid_lst[:5] + random.sample(sorted_grid_lst[5:], 5)
+	# Use some randomness to add robustness
+	return hotspots
 
 def save_params(sc, params, o):
 	def counter_to_string(c):
@@ -191,7 +204,6 @@ def write_path(p, f):
 				writer.writerow([str(locs[0][0][0][0]), str(locs[0][0][0][1]), 
 					str(locs[0][0][1][0]), str(locs[0][0][1][1]), str(locs[0][1]), 
 						str(locs[1]), str(locs[2])])
-
 
 def read_path(f):
 	pass

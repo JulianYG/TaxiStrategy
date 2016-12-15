@@ -18,7 +18,9 @@ class Simulator(object):
         self.end_time = get_state_time_stamp(start_time, available_time)[0]
         self.hotspots = sort_hotspots(rdd)
         self.grid_factor = grid_factor
+        self.grids = rdd.map(lambda (k, v): k[0]).distinct().collect()
         self.database = rdd.collectAsMap()
+        # Boundary should not be a problem here...
 
     def profit_estimation(self, policy, start_loc, iters=20):
         """
@@ -84,6 +86,20 @@ class Simulator(object):
             general_dist += total_dist / iters
 
         return simulated_paths, (general_profit, general_dist)
+
+    def get_states(self, berserk=1):
+        time, state = [], []
+        for t_curr in time_range(get_state_time(self.start_time), self.end_time):
+            time.append(t_curr.strftime('%H:%M'))
+        # If totally random, enumerate all grids inside boundaries in order to 
+        # avoid hotspot eval in unseen cases
+        grids = enumerate_grids((-74.021611, -73.742833, 40.616669, 
+            40.886116), self.grid_factor * 0.00111) if berserk else self.grids
+
+        # Then merge all grids and possible times
+        for g in grids:
+            state += zip([g] * len(time), time)  
+        return state
 
     def _eval_hotspots(self, state):
         curr_loc, curr_hr = state[0], get_state_time_hr(state[1])

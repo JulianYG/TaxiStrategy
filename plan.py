@@ -11,7 +11,7 @@ def run(sc, d, i, o, t, p, g, m):
 	if not m:
 		pi = read_policy(p)
 	elif m == 1:
-		pi = generate_random_policy()
+		pi = generate_random_policy(route_planner.get_states(), g)
 	elif m == 2:
 		pi = generate_oracle_policy()
 
