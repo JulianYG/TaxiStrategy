@@ -191,6 +191,14 @@ def write_policy(pi, V, f):
 			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
 				str(state[0][1][1]), str(state[1]), str(V[state]), pi[state][0][0], pi[state][0][1],
 					pi[state][1][0], pi[state][1][1]])
+			
+def write_oracle(pi, f):
+	with open(f, 'w') as csv_file:
+		writer = csv.writer(csv_file)
+		for state in pi: 
+			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
+				str(state[0][1][1]), str(state[1]), pi[state][0][0], pi[state][0][1],
+					pi[state][1][0], pi[state][1][1]])
 
 def write_path(p, f):
 	with open(f, 'w') as fp:

@@ -26,8 +26,9 @@ def run(sc, d, i, o, t, p, g, m, f):
 			# Note this is mapped in the reversed way to get info easier
 			# key is dropoff state, so we can get the previous state as 
 			# needed in DP alg
-		pi = generate_oracle_policy(route_planner.get_states(), home_location, 
-			full_trip_info)
+		pi = generate_oracle_policy(route_planner.get_states(), gridify(home_location[0], 
+			home_location[1], g), full_trip_info)
+		write_oracle(pi, 'oracle')
 
 	routes = route_planner.profit_estimation(pi, home_location, iters=i)
 	# print plan

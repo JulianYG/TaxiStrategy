@@ -58,8 +58,7 @@ def dp_oracle(states, initial_state, rdd):
 		history[s] = initial_state if opt_cache[s] == curr_util else s_prev
 
 		# Need to reverse the order since it's going back
-		history = dict((v, k) for k, v in history.items())
-
+	history = dict((v, k[0]) for k, v in history.items())
 	return max(opt_cache.values()), history
 
 
