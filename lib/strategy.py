@@ -72,8 +72,6 @@ class TaxiMDP(object):
     def prob_succ_reward(self, state, action):
         
         result = []
-        curr_location = ((float(state[0][0][0]), float(state[0][0][1])), 
-            (float(state[0][1][0]), float(state[0][1][1])))
         target_location = action
         current_time_hr = get_state_time_hr(state[1])
         
@@ -89,7 +87,7 @@ class TaxiMDP(object):
         # Now it takes some time to drive to the target location  
         # This part can be improved by Brehensam's algorithm, if 
         # want to be more accurate on travel time
-        travel_time = curr_cruise_time + manhattan_distance(target_location, curr_location) / v
+        travel_time = curr_cruise_time + manhattan_distance(target_location, state[0]) / v
         _, new_time_hr, new_time_str = get_state_time_stamp(state[1], travel_time)
         new_empty_state = (target_location, new_time_str)
         
@@ -110,7 +108,7 @@ class TaxiMDP(object):
         if dropoff_info:
             for dropoff_location in dropoff_info:
                 dropoff_probability = dropoff_info[dropoff_location]
-                trip_time = curr_cruise_time + manhattan_distance(dropoff_location, curr_location) / v
+                trip_time = curr_cruise_time + manhattan_distance(dropoff_location, state[0]) / v
                 _, dest_time_hr, dest_time_str = get_state_time_stamp(state[1], trip_time)
                 new_full_state = (dropoff_location, dest_time_str)
                 dest_info = self.traffic_info.get((dropoff_location, dest_time_hr))    

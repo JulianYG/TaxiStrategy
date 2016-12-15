@@ -206,7 +206,19 @@ def write_path(p, f):
 						str(locs[1]), str(locs[2])])
 
 def read_path(f):
-	pass
-
+	path = []
+	with open(f, 'r') as fp:
+		reader = csv.reader(fp, delimiter=',')
+		next(reader, None)
+		route = {}
+		for row in reader:
+			if len(row) == 5:
+				path.append(route)
+				route = {'profit': float(row[1]), 'dist': float(row[2]), 
+					'ratio': float(row[3]), 'loc': []}
+			else:
+				route['loc'].append((((float(row[0]), float(row[1])), 
+					(float(row[2]), float(row[3]))), str(row[4]), float(row[5]), float(row[6])))
+	return path[1:]
 
 

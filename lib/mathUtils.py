@@ -49,7 +49,8 @@ def gridify(lon, lat, grid_factor):
 
 def centerize_grid(coords_tuple):
     # ((lon0, lon1), (lat0, lat1)) => (avg lon, avg lat)
-    return ((coords_tuple[0][0] + coords_tuple[0][1]) / 2, (coords_tuple[1][0] + coords_tuple[1][1]) / 2)
+    return ((float(coords_tuple[0][0]) + float(coords_tuple[0][1])) / 2, 
+        (float(coords_tuple[1][0]) + float(coords_tuple[1][1])) / 2)
 
 def get_grid_size(g):
     # Helper function. Assume Manhattan distance
@@ -58,12 +59,8 @@ def get_grid_size(g):
     return width + height   # in miles
 
 def manhattan_distance(loc0, loc1):
-    f_loc0, f_loc1 = ((float(loc0[0][0]), float(loc0[0][1])), (float(loc0[1][0]), \
-        float(loc0[1][1]))), ((float(loc1[0][0]), float(loc1[0][1])), \
-            (float(loc1[1][0]), float(loc1[1][1])))
-    (lon0, lat0), (lon1, lat1) = centerize_grid(f_loc0), centerize_grid(f_loc1)
-    return haversine(float(lon0), float(lat0), float(lon0), 
-        float(lat1)) + haversine(float(lon0), float(lat1), float(lon1), float(lat1))
+    (lon0, lat0), (lon1, lat1) = centerize_grid(loc0), centerize_grid(loc1)
+    return haversine(lon0, lat0, lon0, lat1) + haversine(lon0, lat1, lon1, lat1)
 
 def fare_estimation((dist_m ,dist_s), (pay_m, pay_s), dist):
     # Geary-Hinkley transformation
