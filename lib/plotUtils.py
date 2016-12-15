@@ -108,6 +108,9 @@ def plot_learning_curve(filename):
     data = [trace]
     py.iplot(data, filename='learning_curve')
 
+def path_visualization(filename):
+    path = read_path(filename)
+    pass
 
 cmap = read_count_map('params/countmap')
 dist_to_plot = cmap['dist']

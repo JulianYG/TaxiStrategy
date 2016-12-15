@@ -129,14 +129,6 @@ def sort_hotspots(rdd):
         # Use some randomness to add robustness
     return hotspots
 
-def write_to_file(pi, V, f):
-	with open(f, 'w') as csv_file:
-		writer = csv.writer(csv_file)
-		for state in pi:
-			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
-				str(state[0][1][1]), str(state[1]), str(V[state]), pi[state][0][0], pi[state][0][1],
-					pi[state][1][0], pi[state][1][1]])
-
 def save_params(sc, params, o):
 	def counter_to_string(c):
 		def tuple_to_string(tup):
@@ -175,4 +167,34 @@ def read_policy(p):
 			policy_dict[(((str(row[0]), str(row[1])), (str(row[2]), str(row[3]))), 
 				str(row[4]))] = ((str(row[6]), str(row[7])), (str(row[8]), str(row[9])))
 	return policy_dict
+
+def write_policy(pi, V, f):
+	with open(f, 'w') as csv_file:
+		writer = csv.writer(csv_file)
+		for state in pi:
+			writer.writerow([str(state[0][0][0]), str(state[0][0][1]), str(state[0][1][0]), 
+				str(state[0][1][1]), str(state[1]), str(V[state]), pi[state][0][0], pi[state][0][1],
+					pi[state][1][0], pi[state][1][1]])
+
+def write_path(p, f):
+	with open(f, 'w') as fp:
+		writer = csv.writer(fp)
+		plan, avg_profits = p
+		writer.writerow(['********', str(avg_profits[0]), str(avg_profits[1]), 
+			str(avg_profits[0] / avg_profits[1]), '********'])
+		for path in plan:
+			profit, dist_cost = path['profit']
+			writer.writerow(['--------', str(profit), str(dist_cost), 
+				str(profit / dist_cost), '--------'])
+			route = path['path']
+			for locs in route:
+				writer.writerow([str(locs[0][0][0][0]), str(locs[0][0][0][1]), 
+					str(locs[0][0][1][0]), str(locs[0][0][1][1]), str(locs[0][1]), 
+						str(locs[1]), str(locs[2])])
+
+
+def read_path(f):
+	pass
+
+
 

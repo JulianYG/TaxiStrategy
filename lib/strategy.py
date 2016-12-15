@@ -237,7 +237,7 @@ def valueIteration(mdp, f):
             break
         V = newV
         i += 1
-    write_to_file(policy, V, f)
+    write_policy(policy, V, f)
     
     
     
