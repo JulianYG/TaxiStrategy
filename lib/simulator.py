@@ -12,38 +12,40 @@ class Simulator(object):
     """
 
     """
-    def __init__(self, rdd, start_time, available_time, start_loc, grid_factor):
+    def __init__(self, rdd, start_time, available_time, grid_factor):
 
-        self.start_state = (gridify(start_loc[0], start_loc[1], grid_factor), start_time)
+        self.start_time = start_time
         self.end_time = get_state_time_stamp(start_time, available_time)[0]
         self.hotspots = sort_hotspots(rdd)
+        self.grid_factor = grid_factor
         self.database = rdd.collectAsMap()
 
-    def profit_estimation(self, policy, iters=20):
+    def profit_estimation(self, policy, start_loc, iters=20):
         """
         Note that initial state should match with the input start state
         for MDP value iteration as well
         """
         simulated_paths = []
+        general_profit, general_dist = 0.0, 0.0
+
         for _ in range(iters):
-            curr_state = self.start_state
+
+            # randomly start from a set of POI's for testing
+            curr_state = (gridify(start_loc[0], start_loc[1], self.grid_factor), self.start_time)
             total_profit, total_dist = 0.0, 0.0
-            path_info = {'path': [(curr_state[0], 0.0, 0.0)], 'profit': (0.0, 0.0)}
-            i = 0
+            path_info = {'path': [(curr_state, 0.0, 0.0)], 'profit': (0.0, 0.0)}
+
             while get_state_time(curr_state[1]) < self.end_time:
-                print 'location ' + str(i)
-                i += 1
                 info = self.database.get((curr_state[0], 
                     get_state_time_hr(curr_state[1])), None)
                 if info:
-                    distance_dist, time_dist, pay_dist, cruise_time, v, pickup_prob, \
+                    distance_dist, _, pay_dist, cruise_time, v, pickup_prob, \
                         dropoff_map = info
                 else:
                     v, pickup_prob = 0.18, 0.0
                 # Now it's time to make the decision
                 pickup = np.random.choice([0, 1], p=[1 - pickup_prob, pickup_prob]) # p=
                 if pickup:
-                    print 'pickup'
                     # Second, if there is passenger when leaving current location
                     # Just sample a random place from database
                     location_list, location_prob = zip(*dropoff_map.items())
@@ -75,11 +77,13 @@ class Simulator(object):
                 curr_state = bundle[2]
                 total_profit += bundle[0]
                 total_dist += bundle[1]
-                path_info['path'].append((curr_state[0], bundle[0], bundle[1]))
+                path_info['path'].append((curr_state, bundle[0], bundle[1]))
             path_info['profit'] = (total_profit, total_dist)
-            print total_profit, total_dist
             simulated_paths.append(path_info)
-        return simulated_paths
+            general_profit += total_profit / iters
+            general_dist += total_dist / iters
+
+        return simulated_paths, (general_profit, general_dist)
 
     def _eval_hotspots(self, state):
         curr_loc, curr_hr = state[0], get_state_time_hr(state[1])

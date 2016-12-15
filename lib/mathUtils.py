@@ -72,5 +72,8 @@ def fare_estimation((dist_m ,dist_s), (pay_m, pay_s), dist):
     #     dist**2 - 2 * 0.9 * dist_s * pay_s * dist + pay_s**2) 
     amount = -1
     while amount <= 0:
-        amount = dist * (pay_m / dist_m) - pay_s / dist_s * random.uniform(0, dist_s * pay_s)
-    return amount
+        amount = dist * (pay_m / dist_m) + pay_s / dist_s * random.uniform(0, 1)
+    return amount + 2.5
+
+
+
