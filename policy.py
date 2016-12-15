@@ -39,7 +39,8 @@ def dp_oracle(states, initial_state, rdd):
 	for s in states:
 		s_info = rdd.lookup(s)
 		if s_info: 
-			s_util, s_prev = s_info
+			# Choose the max s_util as well
+			s_util, s_prev = max(s_info)
 		else:
 			s_util, s_prev = 0.0, None
 
