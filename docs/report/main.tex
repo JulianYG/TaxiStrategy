@@ -174,14 +174,14 @@ Figure 10 is the learning curve for value iteration.
 \subsubsection{Baseline Policy}
 An obvious baseline policy is to run randomly on $\mathcal{N}$. One disadvantage mentioned before is that the driver may run into unreachable spaces such as the middle of Central Park, or Hudson Bay. Using coordinates of POI's can solve this problem.
 \subsubsection{Oracle Policy}
-The main obstacle for achieving an oracle policy is that the TLC dataset is highly anonymous, with all license and Medallion ID erased from records, thus I cannot follow on individual taxis to directly pick out the route with maximum net profit. I come up with a dynamic programming get-around. Different from the baseline and learned policies, the oracle takes in the initial location $g_i$ to generate an optimal route. I first process the original data RDD to reverse link all states, so that a key-value pair has form of $s'\to(s,m(s,s'))$, where $m(s,s')$ is the utility earned by going from $s=(g,t)$ to $s'=(g',t')$, evaluated by the Reward function. The base case is initializing all utilities to be zero: $u_s=0$ for all $s\in\mathcal{S}$. Next, I define the transition function
+The main obstacle for achieving an oracle policy is that the TLC dataset is highly anonymous, with all license and Medallion ID erased from records, thus I cannot follow on individual taxis to directly pick out the route with maximum net profit. I come up with a dynamic programming get-around. Different from the baseline and learned policies, the oracle takes in the initial location $g_i$ to generate an optimal route. I first process the original RDD to reverse link all states, so that a key-value pair has form of $s'\to(s,m(s,s'))$, where $m(s,s')$ is the utility earned by going from $s=(g,t)$ to $s'=(g',t')$, evaluated by the Reward function. The base case is initializing all utilities to be zero: $u_s=0$ for all $s\in\mathcal{S}$. Next, for all states, I define the transition function as
 \begin{align}
 u_s &= \text{max}(u_{s'}+m(s, s'), m(s_i, s))
 \end{align}
 where $s_i$ is the initial state. Note that all unseen states are assigned with $u=0$. Backtracking the utility map, I get the oracle policy.
 \section{Results}
 \subsection{Policy Analysis}
-I run the framework on the same small representative dataset, run generated policies on same location and time settings for 30 iterations, and use the average reward to evaluate the correctness of my methods. Below is the table comparing results from three policies.
+I run the framework on the same small representative dataset, run generated policies on same location and time settings (Tuesday 12:01 am, Empire State Building, 80 minutes shift) for 30 iterations, and use the average reward to evaluate the correctness of my methods. Below is the table comparing results from three policies (Note: Performance is the ratio between profit and depreciation. Depreciation is the measurement of fuel cost).
 \begin{center}
 \begin{tabular}{|c||c|c|c|}
 \hline
@@ -191,8 +191,13 @@ Learned & 74.99 & 19.55 & 3.84 \\    \hline
 Oracle & 79.97 & 20.66 & 3.87 \\    \hline
 \end{tabular}
 \end{center}
+
+
+The result clearly shows the performance rise. Both learned and oracle policy performs much better than the baseline policy. I choose a hotspot as starting point, so that the driver can always move to another location at the first trip. The baseline policy at the new location starts random walk, and is harder to find passengers at midnight if the drop-off location is non-ideal. The fact that passengers from Empire State Building typically go to other hotspots reduces this effect, and the baseline policy still gains a decent amount of profit. In other cases it performs much worse. 
+
+The oracle slightly outperforms the learned policy, because in real world, drivers are not always making optimal decisions. Besides, the simulation samples the drop-off locations from a multinomial distribution, which cannot relive the real situation perfectly. 
 \subsection{Visualization of Simulated Path}
-In order to better extrapolate the feasibility and correctness of my framework, I run the generated policies on my simulator and visualize some representative routes in figure 11-13, starting from Tuesday 12:01 AM from Empire State Building, driving for 80 minutes. The full visualization part is included in the code repository, with drop pins marking earned money, and time. In simulation phase, I sample the multinomial drop-off locations from $\mathcal{M}$. Note that the profit values are higher than the actual case of average 50\$, due to the slightly large fare rate in the simulation.
+In order to better extrapolate the feasibility and correctness of my framework, I run the generated policies on my simulator and visualize some representative routes in figure 11-13, starting from Tuesday 12:01 am from Empire State Building, driving for 80 minutes. The full visualization part is included in the code repository, with drop pins marking earned money, and time. In simulation phase, I sample the multinomial drop-off locations from $\mathcal{M}$. Note that the profit values are higher than the actual case of average 50\$, due to the slightly large fare rate in the simulation.
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{oracle.png}
@@ -206,7 +211,7 @@ In order to better extrapolate the feasibility and correctness of my framework, 
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{baseline.png}
-\caption{Baseline Route. Earned 25.09\$}
+\caption{Baseline Route. Earned 25.09\$. Gridify Effect drives the cab into water.}
 \end{figure}
 \section{Future Works}
 As mentioned previously, the gridify process is a bold assumption I make, and migrate to POI GPS coordinates can make the framework more accurate. In evaluating travel time from current location to target location, I simply divide the straight line distance by the average speed, which is not ideal. The Bresenham's Algorithm determines the points of an n-dimensional raster that should be selected in order to form a close approximation to a straight line between two points\cite{bresenham}, from where I can make use of congestion factors along the path and get a more accurate estimation of travel time between grids. As a side mark, I will run on larger dataset for more comprehensive policies, with extra computational resources such as AWS. Code available on GitHub repository:
