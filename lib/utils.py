@@ -127,7 +127,7 @@ def enumerate_grids(boundary, grid_scale):
 def get_state_reward(time, (dist_m, dist_std), (time_m, time_std), 
     (pay_m, pay_std), prob):
 	return prob * ((pay_m - pay_std / 2.0) ** 2 / ((time_m - time_std / 2.0) * \
-        (dist_m - dist_std / 2.0)))
+        (dist_m - dist_std / 2.0))) / time
 
 def sort_hotspots(rdd):
 	# Hot spots are the locations that have highest probabilities
