@@ -1,6 +1,5 @@
 data mining
 machine learning
-correlation
-butterfly effect
-big data
-regression
+Markov Decision Process
+value iteration
+random distribution
