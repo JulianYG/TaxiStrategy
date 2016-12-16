@@ -61,9 +61,9 @@ where $p(\alpha, s)$ is the portion of grids with congestion factor $\alpha$ in 
 \end{align}
 To prove this case, first we need to find the distribution function $p(\alpha,s)$. We plot the histogram of Number of Occurrence \textit{vs.} $\omega$ at Tuesday 12am on a small but representative data set in figure 1. 
 \begin{figure}
-\caption{Tuesday 12am Workload Distribution}
 \centering
 \includegraphics[width=0.28\textwidth]{0am-busy.jpeg}
+\caption{Tuesday 12am Workload Distribution}
 \end{figure}
 This is representative in all (day, hour) combinations. Apparently $p(\alpha, s)$ follows an exponential distribution, where
 \begin{align}
@@ -80,19 +80,19 @@ p &= \sum_{i=0}^{t_c}\frac{\lambda^ie^{-\lambda}}{i!}
 \end{align}
 \item Distribution mean, variance. We plot the histogram of trip distance, trip duration, and total pay amount starting from several POI's at different time on Tuesday in figure 2-4.
 \begin{figure}
-\caption{5pm Little Italy SOHO Trip Time Distribution}
 \centering
 \includegraphics[width=0.28\textwidth]{5pm-littleitaly-soho-triptime.jpeg}
+\caption{5pm Little Italy SOHO Trip Time Distribution}
 \end{figure}
 \begin{figure}
-\caption{6pm Lincoln Tunnel Pay Distribution}
 \centering
 \includegraphics[width=0.28\textwidth]{18-lincoln-tunnel-pay.jpeg}
+\caption{6pm Lincoln Tunnel Pay Distribution}
 \end{figure}
 \begin{figure}
-\caption{11am Sutton Place Trip Distance Distribution}
 \centering
 \includegraphics[width=0.28\textwidth]{11am-sutton-place-dist.jpeg}
+\caption{11am Sutton Place Trip Distance Distribution}
 \end{figure}
 Apparently, from the figures, we notice all three distributions are skewed normal. The means and variances of theses distributions are thus effective in evaluating the reward of a grid. Given the numbers, for the specific week day, we define the following reward function for a (grid, hour) key:
 \begin{align}
@@ -101,9 +101,9 @@ R(g, t) = p\frac{(\mu_p-\frac{\sigma_p}{2})^2}{(\mu_t-\frac{\sigma_t}{2})(\mu_s-
 We will discuss later their usage in path simulation. 
 \item Drop-off location probability map. This is crucial data for the MDP process and path simulation. Given location-time pair $(g, t)$, we store the mapping 
 \begin{align}
-\mathcal{M}:(g,t)\to \{(g', \rho_{g'})\}
+\mathcal{M}:(g,t,g')\to \{\rho_{g'}\}
 \end{align}
-where $\rho$ is the probability of drop-off at $g'$. Note that $\sum_{g'}\rho_{g'}=1$.
+for all $g'$ in the drop-off location set $\mathcal{D}_{(g,t)}$, where $\rho$ is the probability of drop-off at $g'$. Note that $\sum_{g'}\rho_{g'}=1$.
 \end{enumerate}
 With above parameters described, we visualize a few pick-up probability maps of NYC, generated from a 15-month data set. We also plot the drop-off location map from certain pick-up locations. See figure 5-9.
 \begin{figure}
@@ -132,20 +132,80 @@ With above parameters described, we visualize a few pick-up probability maps of 
 \caption{11am Drop-off From Chanel Shop}
 \end{figure}
 \subsection{Markov Decision Process}
+Now we formally define the MDP for the passenger pick-up problem.\\
+\textbf{States}: $\mathcal{S} = \{(g, t): g\in\mathcal{B}\wedge t\in(T_s, T_e)\}$, where $T_s, T_e$ are start and end time (driver shift).\\
+\textbf{s$_{\text{start}}$}$=(g_s, T_s)$ where $g_s$ is starting location.\\
+\textbf{Actions($(g, t)$)} =
+\begin{align}
+\{(g', t'):t'= t+t_s\wedge g'\in\mathcal{N}(g)\cup\mathcal{H}\}
+\end{align}
+where $t_s$ is the trip duration, $\mathcal{N(g)}$ is the neighbors of $g$ (including itself), and $\mathcal{H}$ is the set of hotspots on the map.\\
+\textbf{T$((g,t), a, (g',t'))$}=
+\begin{align}
+1\{g'\in\mathcal{N}(g)\}(1-p_g)\\
++1\{g'\not\in\mathcal{N}(g)\}p_g\cdot\mathcal{M}_{(g,t,g')}
+\end{align}
+which can be viewed as two parts: if the taxi does not pick up a passenger in current location, then it can arrive in the neighbors; otherwise it can only arrive at location $g'$ if the passenger also goes there.\\
+\textbf{Reward}$((g,t), a, (g',t'))=R(g,t)\cdot\frac{t'-t}{|g'-g|}$\\
+This is simply dividing reward function (8) by the travel time towards $g'$.\\
+\textbf{IsEnd}$((g,t))=1\{t>T_e\}$.\\
+\textbf{$\gamma$} = 1.
 
+
+Now the logic behind the scene. There are many assumptions to make to solve the problem: if we assume the driver to pick up whenever he/she sees passengers on the way, then we can only allow Actions$((g,t))$ to be $\mathcal{N}$, otherwise there is no guarantee that the driver will ever arrive at any chosen $g'$. However, if we only allow Actions$((g,t))$ to be $\mathcal{N}$, then if the driver is in the middle of nowhere (unseen states in data set), then he/she will get bogged. 
+
+On the other hand, if we assume the driver only goes to chosen target $g'$ without taking any passengers midway, then we can allow Actions$((g,t))$ to be arbitrary $g'\in\mathcal{B}$. This setting explores the entire map with every possible situation, which finds the global optimum of the problem. However this is computationally unacceptable. Instead we decide to take a step back, and choose to search for local optimum: let Action$((g,t))$ to be $\mathcal{N}\cup\mathcal{H}$, a combination of neighbors and hotspots. This prevents the driver from wandering in nowhere, and also stops him/her from over-exploiting the hotspots. This is an analogy of the Exploration-Exploitation problem, where $\epsilon$ stands for the size of $\mathcal{H}$. Our assumption of not picking up midway also works perfectly here: if the driver is heading to the hotspots, the $g$'s on the path will not likely to have high pick-up probabilities, otherwise they are hotspots themselves.
 \subsection{Policy Generation}
 \subsubsection{Learned Policy}
-
+We use value iteration method to generate the learned policy for MDP states. Different from what we stated in the formulation of MDP above, in actual implementation we choose states as the set of states appeared in data set keys. This is to reduce unnecessary computation and expedite the iteration. If the successor $(g',t')$ from $(g,t)$ is unseen (new $t'$ from time elapse, or new $g'$ from wandering into neighbors), then we assume average $t_c$, $v$, and $p=0.0$, since not recorded means there is no previous pick-up event. The probability sums to 1 as follows:
+\begin{align}
+p + (1-p)\sum_{g'}\rho_{g'} =1
+\end{align}
+Figure 10 is the learning curve for value iteration.
+\begin{figure}
+\centering
+\includegraphics[width=0.33\textwidth]{tiny_VI_curve.png}
+\caption{Value Iteration Learning Curve}
+\end{figure}
 \subsubsection{Baseline Policy}
-
+An obvious baseline policy is to run randomly on $\mathcal{N}$. One disadvantage mentioned before is that the driver may run into unreachable spaces such as the middle of Central Park, or Hudson Bay. Using coordinates of POI's can solve this problem.
 \subsubsection{Oracle Policy}
-
+The main obstacle for achieving an oracle policy is that the TLC data set is highly anonymous, with all license and Medallion ID erased from records, thus we cannot follow on individual taxis to directly pick out the route with maximum net profit. We come up with a dynamic programming get-around. Different from the baseline and learned policies, the oracle takes in the initial location $g_i$ to generate an optimal route. We first process the original data RDD to reverse link all states, so that a key-value pair has form of $s'\to(s,m(s,s'))$, where $m(s,s')$ is the utility earned by going from $s=(g,t)$ to $s'=(g',t')$, evaluated by the Reward function. The base case is initializing all utilities to be zero: $u_s=0$ for all $s\in\mathcal{S}$. Next we define the transition function
+\begin{align}
+u_s &= \text{max}(u_{s'}+m(s, s'), m(s_i, s))
+\end{align}
+where $s_i$ is the initial state. Note that all unseen states are assigned with $u=0$. Backtracking the utility map, we get the oracle policy.
 \section{Results}
 \subsection{Policy Analysis}
-
+We run the framework on the same small representative data set, run generated policies on same location and time settings for 30 iterations, and use the average reward to evaluate the correctness of our methods. Below is the table comparing results from three policies.
+\begin{center}
+\begin{tabular}{|c||c|c|c|}
+\hline
+Policy & Profit & Depreciation & Performance \\ \hline
+Baseline & 51.93 & 14.94 & 3.48 \\    \hline
+Learned & 74.99 & 19.55 & 3.84 \\    \hline
+Oracle & 79.97 & 20.66 & 3.87 \\    \hline
+\end{tabular}
+\end{center}
 \subsection{Visualization of Simulated Path}
-
+In order to better extrapolate the feasibility and correctness of our framework, we run the generated policies on our simulator and visualize some representative routes in figure 11-13, starting from Tuesday 12:01 AM from Empire State Building, driving for 80 minutes. The full visualization part is included in  code repository, with drop pins marking earned money, and time. In simulation phase, we sample the multinomial drop-off locations from $\mathcal{M}$. Note that the profit values are  higher than the actual case of average 50\$, due to the slightly large fare rate in simulation.
+\begin{figure}
+\centering
+\includegraphics[width=0.3\textwidth]{oracle.png}
+\caption{Oracle Route. Earned 104.01\$}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width=0.3\textwidth]{learned.png}
+\caption{Learned Route. Earned 83.80\$}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width=0.3\textwidth]{baseline.png}
+\caption{Baseline Route. Earned 25.09\$}
+\end{figure}
 \section{Future Works}
+As 
 \bibliographystyle{ieeetr}
 % \bibliography{report}
 \end{document}
