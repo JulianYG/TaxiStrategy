@@ -22,7 +22,7 @@
 \maketitle
 \section{Introduction}
 New York City, one of the most famous metropolis in the world, has an enormous collection of human activities at all time. Among those activities, one of the most significant symbols, the Yellow Cab, is representative of population and capital flow in the city. According to the NYC taxi cab fact book\cite{factbook}, there are over 485,000 taxi trips and 600,000 passengers per day during the year 2014. These numbers, however, are going down due to the impact from other car-hailing platforms such as Uber and Lyft. In order to maximize the profit for traditional Yellow Cab drivers and to compete with car-hailing companies, I propose a software framework to generate a set of optimized passenger pick-up strategies. The framework combines methods of machine learning, data mining, and Markov Decision Process (MDP). I show that my method when comparing with average hourly income from real data, performs much better. The framework I propose also applies to other user cases, which brings more social impacts other than helping NYC taxi drivers.
-\section{Related Works}
+\section{Related Work}
 There are many previous works on NYC taxi dataset. However, they are mainly focused on analysis and prediction aspects of data. Chriswhong visualizes the movement and earnings of a taxi in 24 hours\cite{cw}. Daulton \textit{et al.} uses machine learning methods to predict pick-up density and drop-off locations\cite{harvard}. Tipsy Taxi reveals the fraud behavior and performs traffic analysis, tip analysis for drivers\cite{tipsy}. There are studies on taxi passenger pick-up strategies, with binary behavior recommendation such as "hunting" or "waiting". Li \textit{et al.}\cite{li} and Tang \textit{et al.} uses data with taxi occupancy label\cite{tang}, which is not available on NYC dataset. Yuan \textit{et al.} proposes and relies on parking places detection method, but targets on saving cruise time and maximizing trip distance\cite{yuan}. 
 \section{Framework}
 \subsection{Data Set}
@@ -82,17 +82,17 @@ p &= \sum_{i=0}^{t_c}\frac{\lambda^ie^{-\lambda}}{i!}
 \begin{figure}
 \centering
 \includegraphics[width=0.28\textwidth]{5pm-littleitaly-soho-triptime.jpeg}
-\caption{5pm Little Italy SOHO Trip Time Distribution}
+\caption{5 pm Little Italy SOHO Trip Time Distribution}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.28\textwidth]{18-lincoln-tunnel-pay.jpeg}
-\caption{6pm Lincoln Tunnel Pay Distribution}
+\caption{6 pm Lincoln Tunnel Pay Distribution}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.28\textwidth]{11am-sutton-place-dist.jpeg}
-\caption{11am Sutton Place Trip Distance Distribution}
+\caption{11 am Sutton Place Trip Distance Distribution}
 \end{figure}
 Apparently, from the figures, I notice all three distributions are skewed normal. The means and variances of theses distributions are thus effective in evaluating the reward of a grid. Given the numbers, for the specific week day, I define the following reward function for a (grid, hour) key:
 \begin{align}
@@ -109,22 +109,22 @@ With above parameters described, I visualize a few pick-up probability maps of N
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{0-9.jpg}
-\caption{From Top-Left to Bottom-Right: 12am, 3am, 6am, 9am}
+\caption{From Top-Left to Bottom-Right: 12 am, 3 am, 6 am, 9 am}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{12-23.jpg}
-\caption{From Top-Left to Bottom-Right: 12pm, 15pm, 18pm, 23pm}
+\caption{From Top-Left to Bottom-Right: 12 pm, 3 pm, 6 pm, 11 pm}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.33\textwidth]{5pm-empire-state.png}
-\caption{5pm Drop-off From Empire State Building}
+\caption{5 pm Drop-off From Empire State Building}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.33\textwidth]{9-MtSinaiHospital.png}
-\caption{9pm Drop-off From Mt. Sinai Hospital}
+\caption{9 pm Drop-off From Mt. Sinai Hospital}
 \end{figure}
 \begin{figure}
 \centering
