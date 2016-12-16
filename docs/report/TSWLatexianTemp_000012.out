@@ -1,0 +1,19 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Related Works}{}% 2
+\BOOKMARK [1][-]{section.3}{Framework}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{Data Set}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{Software Pipeline}{section.3}% 5
+\BOOKMARK [1][-]{section.4}{Methods}{}% 6
+\BOOKMARK [2][-]{subsection.4.1}{Assumptions \046 Simplifications}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.2}{Data Mining \046 Feature Extraction}{section.4}% 8
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Data Pre-Processing}{subsection.4.2}% 9
+\BOOKMARK [3][-]{subsubsection.4.2.2}{Parameters}{subsection.4.2}% 10
+\BOOKMARK [2][-]{subsection.4.3}{Markov Decision Process}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.4}{Policy Generation}{section.4}% 12
+\BOOKMARK [3][-]{subsubsection.4.4.1}{Learned Policy}{subsection.4.4}% 13
+\BOOKMARK [3][-]{subsubsection.4.4.2}{Baseline Policy}{subsection.4.4}% 14
+\BOOKMARK [3][-]{subsubsection.4.4.3}{Oracle Policy}{subsection.4.4}% 15
+\BOOKMARK [1][-]{section.5}{Results}{}% 16
+\BOOKMARK [2][-]{subsection.5.1}{Policy Analysis}{section.5}% 17
+\BOOKMARK [2][-]{subsection.5.2}{Visualization of Simulated Path}{section.5}% 18
+\BOOKMARK [1][-]{section.6}{Future Works}{}% 19
