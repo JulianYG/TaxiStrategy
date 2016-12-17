@@ -108,8 +108,8 @@ class Simulator(object):
         return best_loc
 
     def _eval_profit(self, curr_loc, location, hr):
-        distance_dist, time_dist, pay_dist, _, v, pickup_prob, _ = self.database[(location, hr)]
-        trip_time = manhattan_distance(location, curr_loc) / v
+        distance_dist, time_dist, pay_dist, cruise_time, v, pickup_prob, _ = self.database[(location, hr)]
+        trip_time = manhattan_distance(location, curr_loc) / v + cruise_time
         return get_state_reward(trip_time, distance_dist, time_dist, pay_dist, pickup_prob)
 
 
