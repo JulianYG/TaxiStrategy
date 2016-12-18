@@ -20,12 +20,34 @@
   julianyg@stanford.edu}
 \begin{document}
 \maketitle
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf} 
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{authblk}
+\title{\LARGE \bf Taxi in New York City: Generating Lucrative Passenger Pick-up Strategy}
+\author{Julian Gao (julianyg)}
+\affil{Stanford University \authorcr
+  julianyg@stanford.edu}
+\begin{document}
+\maketitle
 \section{Introduction}
 New York City, one of the most famous metropolis in the world, has an enormous collection of human activities at all time. Among those activities, one of the most significant symbols, the Yellow Cab, is representative of population and capital flow in the city. According to the NYC taxi cab fact book\cite{factbook}, there are over 485,000 taxi trips and 600,000 passengers per day during the year 2014. These numbers, however, are going down due to the impact from other car-hailing platforms such as Uber and Lyft. In order to maximize the profit for traditional Yellow Cab drivers and to compete with car-hailing companies, I propose a software framework to generate a set of optimized passenger pick-up strategies. The framework combines methods of machine learning, data mining, and Markov Decision Process (MDP). I show that my method when comparing with average hourly income from real data, performs much better. The framework I propose also applies to other user cases, which brings more social impacts other than helping NYC taxi drivers.
 \section{Related Work}
 There are many previous works on NYC taxi dataset. However, they are mainly focused on analysis and prediction aspects of data. Chriswhong visualizes the movement and earnings of a taxi in 24 hours\cite{cw}. Daulton \textit{et al.} uses machine learning methods to predict pick-up density and drop-off locations\cite{harvard}. Tipsy Taxi reveals the fraud behavior and performs traffic analysis, tip analysis for drivers\cite{tipsy}. There are studies on taxi passenger pick-up strategies, with binary behavior recommendation such as "hunting" or "waiting". Li \textit{et al.}\cite{li} and Tang \textit{et al.} uses data with taxi occupancy label\cite{tang}, which is not available on NYC dataset. Yuan \textit{et al.} proposes and relies on parking places detection method, but targets on saving cruise time and maximizing trip distance\cite{yuan}. 
 \section{Framework}
-\subsection{Data Set}
+\subsection{Dataset}
 I use data directly from NYC Taxi \& Limousine Commission (TLC) official website\cite{tlc}. Starting from 2009, the TLC publishes the Yellow, Green, and FHV (For-Hire Vehicle) trip sheet data in CSV format. Each sheet contains trip records in a specific month, where each record is composed of the following information: VendorID, TPEP pick-up time, TPEP drop-off time, passenger count, trip distance, pick-up location, rate code ID, store and forward flag, drop-off location, payment type, fare amount, extra, MTA tax, improvement surcharge, tip amount, tolls amount, and total amount\cite{rec}. The TLC cannot guarantee or confirm the accuracy or completeness of data. 
 \subsection{Software Pipeline}
 The framework is composed of two parts: policy (pick-up strategy) generation (1) and trip simulation (2). The policy generation part can be further divided into two stages: feature extraction (1.1), and MDP value iteration (1.2). Each stage is an independent module, where generated parameter files can be stored and distributed, for the convenience of reuse and computation, also serving sources for other data-related analysis. 
@@ -168,7 +190,7 @@ p + (1-p)\sum_{g'}\rho_{g'} =1
 Figure 10 is the learning curve for value iteration.
 \begin{figure}
 \centering
-\includegraphics[width=0.33\textwidth]{tiny_VI_curve.png}
+\includegraphics[width=0.33\textwidth]{LearningCurve.png}
 \caption{Value Iteration Learning Curve}
 \end{figure}
 \subsubsection{Baseline Policy}
@@ -201,23 +223,27 @@ In order to better extrapolate the feasibility and correctness of my framework, 
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{oracle.png}
-\caption{Oracle Route. Earned 104.01\$}
+\caption{Oracle Route. Earned \$104.01}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{learned.png}
-\caption{Learned Route. Earned 83.80\$}
+\caption{Learned Route. Earned \$83.80}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{baseline.png}
-\caption{Baseline Route. Earned 25.09\$. Gridify Effect drives the cab into water.}
+\caption{Baseline Route. Earned \$25.09. Gridify Effect drives the cab into water.}
 \end{figure}
-\section{Future Works}
+\section{Future Work}
 As mentioned previously, the gridify process is a bold assumption I make, and migrate to POI GPS coordinates can make the framework more accurate. In evaluating travel time from current location to target location, I simply divide the straight line distance by the average speed, which is not ideal. The Bresenham's Algorithm determines the points of an n-dimensional raster that should be selected in order to form a close approximation to a straight line between two points\cite{bresenham}, from where I can make use of congestion factors along the path and get a more accurate estimation of travel time between grids. As a side mark, I will run on larger dataset for more comprehensive policies, with extra computational resources such as AWS. Code available on GitHub repository:
 \begin{center}
 \textit{https://github.com/JulianYG/221finalproject}
 \end{center}
+\bibliographystyle{ieeetr}
+\bibliography{report}
+\end{document}
+
 \bibliographystyle{ieeetr}
 \bibliography{report}
 \end{document}
