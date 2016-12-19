@@ -20,28 +20,6 @@
   julianyg@stanford.edu}
 \begin{document}
 \maketitle
-\documentclass[letterpaper, 10 pt, conference]{ieeeconf} 
-\IEEEoverridecommandlockouts
-\overrideIEEEmargins
-%% Language and font encodings
-\usepackage[english]{babel}
-\usepackage[utf8x]{inputenc}
-\usepackage[T1]{fontenc}
-%% Sets page size and margins
-\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
-
-%% Useful packages
-\usepackage{amsmath}
-\usepackage{graphicx}
-\usepackage[colorinlistoftodos]{todonotes}
-\usepackage[colorlinks=true, allcolors=blue]{hyperref}
-\usepackage{authblk}
-\title{\LARGE \bf Taxi in New York City: Generating Lucrative Passenger Pick-up Strategy}
-\author{Julian Gao (julianyg)}
-\affil{Stanford University \authorcr
-  julianyg@stanford.edu}
-\begin{document}
-\maketitle
 \section{Introduction}
 New York City, one of the most famous metropolis in the world, has an enormous collection of human activities at all time. Among those activities, one of the most significant symbols, the Yellow Cab, is representative of population and capital flow in the city. According to the NYC taxi cab fact book\cite{factbook}, there are over 485,000 taxi trips and 600,000 passengers per day during the year 2014. These numbers, however, are going down due to the impact from other car-hailing platforms such as Uber and Lyft. In order to maximize the profit for traditional Yellow Cab drivers and to compete with car-hailing companies, I propose a software framework to generate a set of optimized passenger pick-up strategies. The framework combines methods of machine learning, data mining, and Markov Decision Process (MDP). I show that my method when comparing with average hourly income from real data, performs much better. The framework I propose also applies to other user cases, which brings more social impacts other than helping NYC taxi drivers.
 \section{Related Work}
@@ -219,7 +197,7 @@ The result clearly shows the performance rise. Both learned and oracle policy pe
 
 The oracle slightly outperforms the learned policy, because in real world, drivers are not always making optimal decisions. Besides, the simulation samples the drop-off locations from a multinomial distribution, which cannot relive the real situation perfectly. 
 \subsection{Visualization of Simulated Path}
-In order to better extrapolate the feasibility and correctness of my framework, I run the generated policies on my simulator and visualize some representative routes in figure 11-13, starting from Tuesday 12:01 am from Empire State Building, driving for 80 minutes. The full visualization part is included in the code repository, with drop pins marking earned money, and time. In simulation phase, I sample the multinomial drop-off locations from $\mathcal{M}$. Note that the profit values are higher than the actual case of average 50\$, due to the slightly large fare rate in the simulation.
+In order to better extrapolate the feasibility and correctness of my framework, I run the generated policies on my simulator and visualize some representative routes in figure 11-13, starting from Tuesday 12:01 am from Empire State Building, driving for 80 minutes. The full visualization part is included in the code repository, with drop pins marking earned money, and time. In simulation phase, I sample the multinomial drop-off locations from $\mathcal{M}$. Note that the profit values are higher than the actual case of average \$50, due to the slightly large fare rate in the simulation.
 \begin{figure}
 \centering
 \includegraphics[width=0.3\textwidth]{oracle.png}
@@ -240,10 +218,6 @@ As mentioned previously, the gridify process is a bold assumption I make, and mi
 \begin{center}
 \textit{https://github.com/JulianYG/221finalproject}
 \end{center}
-\bibliographystyle{ieeetr}
-\bibliography{report}
-\end{document}
-
 \bibliographystyle{ieeetr}
 \bibliography{report}
 \end{document}
