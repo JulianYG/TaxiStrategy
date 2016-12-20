@@ -168,17 +168,17 @@ p + (1-p)\sum_{g'}\rho_{g'} =1
 Figure 10 is the learning curve for value iteration.
 \begin{figure}
 \centering
-\includegraphics[width=0.33\textwidth]{LearningCurve.png}
+\includegraphics[width=0.33\textwidth]{LearningCurve.jpeg}
 \caption{Value Iteration Learning Curve}
 \end{figure}
 \subsubsection{Baseline Policy}
 An obvious baseline policy is to run randomly on $\mathcal{N}$. One disadvantage mentioned before is that the driver may run into unreachable spaces such as the middle of Central Park, or Hudson Bay. Using coordinates of POI's can solve this problem.
 \subsubsection{Oracle Policy}
-The main obstacle for achieving an oracle policy is that the TLC dataset is highly anonymous, with all license and Medallion ID erased from records, thus I cannot follow on individual taxis to directly pick out the route with maximum net profit. I come up with a dynamic programming get-around. Different from the baseline and learned policies, the oracle takes in the initial location $g_i$ to generate an optimal route. I first process the original RDD to reverse link all states, so that a key-value pair has form of $s'\to(s,m(s,s'))$, where $m(s,s')$ is the utility earned by going from $s=(g,t)$ to $s'=(g',t')$, evaluated by the Reward function. The base case is initializing all utilities to be zero: $u_s=0$ for all $s\in\mathcal{S}$. Next, for all states, I define the transition function as
+The main obstacle for achieving an oracle policy is that the TLC dataset is highly anonymous, with all license and Medallion ID erased from records, thus I cannot follow on individual taxis to directly pick out the route with maximum net profit. I come up with a dynamic programming get-around. Different from the baseline and learned policies, the oracle takes in the initial location $g_i$ to generate an optimal route. I first process the original RDD to reverse link all states, so that a key-value pair has form of $\mathcal{K}: s'\to(s,m(s,s'))$, where $m(s,s')$ is the utility earned by going from an $s=(g,t)$ to $s'=(g',t')$, evaluated by the Reward function. The base case is initializing all utilities to be zero: $u_s=0$ for all $s\in\mathcal{S}$. Next, for all states, I define the transition function as
 \begin{align}
-u_{s'} &= \text{max}(u_{s}+m(s, s'), m(s_i, s'))
+u_{s'} &= \text{max}\{u_{s}+m(s, s')\}
 \end{align}
-where $s_i$ is the initial state. Note that all unseen states are assigned with $u=0$. Backtracking the utility map, I get the oracle policy.
+where $s\in\mathcal{K}(s')$. Note that all unseen states are assigned with $u=0$. Backtracking the utility map, I get the oracle policy.
 \section{Results}
 \subsection{Policy Analysis}
 I run the framework on the same small representative dataset, run generated policies on same location and time settings (Tuesday 12:01 am, Empire State Building, 80 minutes shift) for 30 iterations, and use the average reward to evaluate the correctness of my methods. Below is the table comparing results from three policies (Note: Performance is the ratio between profit and depreciation. Depreciation is the measurement of fuel cost).
