@@ -7,7 +7,8 @@ def generate_oracle_policy(states, state, rdd):
 	finding a set of non-intersecting line segments that 
 	have largest sum. 
 	"""
-	best_action = dp_oracle(states, state, rdd)[1]
+	best_score, best_action = dp_oracle(states, state, rdd)
+	print best_score
 	return best_action
 
 def generate_random_policy(states, grid_factor):
@@ -42,20 +43,11 @@ def dp_oracle(states, initial_state, rdd):
 	for s in states:
 		# s_info = rdd.lookup(s)
 		s_info = dic_store.get(s, None)
-		if s_info: 
-			prev_states = [m for m in s_info if m[1] != initial_state]
-			# Choose the max s_util as well
-			s_util, s_prev = max(prev_states)
-
-			# This is to check util from initial state to here
-			init = [n for n in s_info if n[0] == initial_state]
-			curr_util = init[0] if init else 0.0
-		else:
-			s_util, s_prev, curr_util = 0.0, None, 0.0
-
+		prev_states = [m for m in s_info] if s_info else [(0.0, initial_state)]
+		
 		# Now make the choice, and track the choice
-		opt_cache[s] = max(opt_cache[s_prev] + s_util, curr_util)
-		history[s] = initial_state if opt_cache[s] == curr_util else s_prev
+		opt_cache[s], history[s] = max([(opt_cache[ps[1]] + ps[0], 
+			ps[1]) for ps in prev_states])
 
 		# Need to reverse the order since it's going back
 	history = dict((v, k[0]) for k, v in history.items())
