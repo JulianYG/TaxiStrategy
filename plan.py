@@ -17,15 +17,16 @@ def run(sc, d, i, o, t, p, g, m, f):
 		pi = generate_random_policy(route_planner.get_states(), g)
 	elif m == 2:
 		# Use 0, assuming Tuesdays
-		full_trip_info = preprocess_taxi_data(f, 1, g, sc)\
+		trip_info = [preprocess_taxi_data(data_file, 1, g, sc)\
 			.map(lambda (k, v): ((v[3], get_state_time_stamp(get_state_datetime(k[0]), v[1])[2]), 
 				[(v[4]**2 / (v[1] * v[2]), (k[1], get_state_datetime(k[0])))]))\
-					.reduceByKey(lambda a, b: a + b)
+					.reduceByKey(lambda a, b: a + b) for data_file in f]
 			# map to a ratio: profit^2 / (time * dist) to maximize utility
 			# also keep track of (dropoff loc, dropoff time) state
 			# Note this is mapped in the reversed way to get info easier
 			# key is dropoff state, so we can get the previous state as 
 			# needed in DP alg
+		full_trip_info = sc.union(trip_info)
 		pi = generate_oracle_policy(route_planner.get_states(), gridify(home_location[0], 
 			home_location[1], g), full_trip_info)
 		write_oracle(pi, 'oracle')
@@ -38,6 +39,9 @@ def parse_command(argv):
 	"""
 	A helper function to extract mode, and input file information
 	"""
+	def parser_callback(option, opt, val, parser):
+		setattr(parser.values, option.dest, val.split(','))
+		
 	argv = OptionParser(description="Usage: given rdd, policy, start time and location, \
 		generate simulated taxi path")
 
@@ -49,8 +53,8 @@ def parse_command(argv):
 	argv.add_option('-g', type=float, help="Grid factor", default=4)
 	argv.add_option('-m', type=int, help="Running mode: 0 for reading policy file, \
 		1 for baseline, 2 for oracle", default=0)
-	argv.add_option('-f', type=str, help="The original raw csv file that contains \
-		all trip info")
+	argv.add_option('-f', type=str, action='callback', callback=parser_callback,
+		help="The original raw csv file that contains all trip info")
 	
 	arg, _ = argv.parse_args()
 	return {'d': arg.d, 'i': arg.i, 'o': arg.o, 'm': arg.m, 

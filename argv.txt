@@ -2,4 +2,4 @@
 -x data/2016_03_x.csv -g 4 -o param
 
 -d smpt -i 30 -p results/tiny_policy.txt -t 00:01
--m 2 -i 30 -t 00:01 -g 4 -f data/tiny.csv -d smpt -o oracle_path
+-m 2 -i 300 -t 00:01 -g 4 -f data/2016_03_x.csv,data/2016_01_x.csv,data/2016_04_x.csv,data/2016_05_x.csv,data/2016_06_x.csv,data/2015_01_x.csv,data/2015_02_x.csv,data/2015_03_x.csv,data/2015_04_x.csv,data/2015_05_x.csv,data/2015_06_x.csv,data/2015_07_x.csv,data/2015_08_x.csv,data/2015_09_x.csv,data/2015_10_x.csv,data/2015_11_x.csv,data/2015_12_x.csv -d param -o  oracle_path
